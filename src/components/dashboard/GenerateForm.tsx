@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Button from "@/components/shared/Button";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/posthog";
 import type { Tier } from "@/types";
 
@@ -15,6 +15,7 @@ export default function GenerateForm({
   tier: Tier;
   onCreated: () => void;
 }) {
+  const supabase = createClient();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);

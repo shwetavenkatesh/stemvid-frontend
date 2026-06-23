@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/components/shared/Button";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/posthog";
 
 const roles = [
@@ -30,6 +30,7 @@ export default function FeedbackWidget({
   jobId: string;
   userId: string;
 }) {
+  const supabase = createClient();
   const [role, setRole] = useState("");
   const [field, setField] = useState("");
   const [accurate, setAccurate] = useState("");

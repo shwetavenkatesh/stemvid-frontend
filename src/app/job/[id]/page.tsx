@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import StatusTracker from "@/components/job/StatusTracker";
 import VideoPlayer from "@/components/job/VideoPlayer";
@@ -12,6 +12,7 @@ import Button from "@/components/shared/Button";
 import type { Job } from "@/types";
 
 export default function JobPage() {
+  const supabase = createClient();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [job, setJob] = useState<Job | null>(null);

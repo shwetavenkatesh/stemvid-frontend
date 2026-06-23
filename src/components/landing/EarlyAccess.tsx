@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Button from "@/components/shared/Button";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/posthog";
 
 export default function EarlyAccess() {
+  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");

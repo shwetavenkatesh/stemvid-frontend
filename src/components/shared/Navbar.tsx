@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase";
 
 export default function Navbar({
   user,
@@ -29,7 +30,7 @@ export default function Navbar({
               </Link>
               <button
                 onClick={async () => {
-                  const { supabase } = await import("@/lib/supabase");
+                  const supabase = createClient();
                   await supabase.auth.signOut();
                   window.location.href = "/";
                 }}

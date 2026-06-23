@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import Modal from "@/components/shared/Modal";
 import VideoCard from "@/components/dashboard/VideoCard";
@@ -15,6 +15,7 @@ import type { Job, Profile } from "@/types";
 const VIDEO_LIMITS = { free: 2, pro: 7 };
 
 export default function DashboardPage() {
+  const supabase = createClient();
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import type { Job } from "@/types";
 
@@ -21,6 +21,7 @@ interface AdminJob extends Job {
 }
 
 export default function AdminPage() {
+  const supabase = createClient();
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
