@@ -65,8 +65,9 @@ export default function EarlyAccess() {
             />
             <Button
               type="submit"
+              variant="secondary"
               disabled={loading}
-              className="bg-white text-teal hover:bg-gray-100"
+              className="!bg-white !text-teal hover:!bg-gray-100"
             >
               {loading ? "Joining..." : "Join waitlist"}
             </Button>

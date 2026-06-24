@@ -43,15 +43,31 @@ export default function GenerateForm({
       .from("pdfs")
       .getPublicUrl(filePath);
 
-    const { error: insertError } = await supabase.from("jobs").insert({
-      user_id: userId,
-      title: title || file.name.replace(/\.pdf$/i, ""),
-      pdf_url: urlData.publicUrl,
-      status: "queued",
+    const { data: jobData, error: insertError } = await supabase
+      .from("jobs")
+      .insert({
+        user_id: userId,
+        title: title || file.name.replace(/\.pdf$/i, ""),
+        pdf_url: filePath,
+        status: "queued",
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !jobData) {
+      setError("Failed to create job. Try again.");
+      setSubmitting(false);
+      return;
+    }
+
+    const triggerResp = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "paper", job_id: jobData.id }),
     });
 
-    if (insertError) {
-      setError("Failed to create job. Try again.");
+    if (!triggerResp.ok) {
+      setError("Job created but failed to start pipeline. Try again.");
       setSubmitting(false);
       return;
     }
