@@ -6,7 +6,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import StatusTracker from "@/components/job/StatusTracker";
-import VideoPlayer from "@/components/job/VideoPlayer";
 import FeedbackWidget from "@/components/job/FeedbackWidget";
 import Button from "@/components/shared/Button";
 import type { Job } from "@/types";
@@ -18,6 +17,8 @@ export default function JobPage() {
   const [job, setJob] = useState<Job | null>(null);
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -92,27 +93,48 @@ export default function JobPage() {
           {job.title || "Untitled video"}
         </h1>
 
-        <div className="mt-8">
-          {job.status === "ready" && job.video_url ? (
-            <VideoPlayer url={job.video_url} />
-          ) : (
-            <div className="rounded-lg border border-gray-200 bg-gray-100 p-8">
-              <StatusTracker status={job.status} />
-            </div>
-          )}
+        <div className="mt-8 rounded-lg border border-gray-200 bg-gray-100 p-8">
+          <StatusTracker status={job.status} />
         </div>
 
-        {job.status === "ready" && (
-          <div className="mt-8 space-y-6">
-            {job.video_url && (
-              <a href={job.video_url} download>
-                <Button variant="outline">Download MP4</Button>
-              </a>
+        {job.status === "ready" && job.video_url && (
+          <div className="mt-8">
+            <Button
+              className="w-full"
+              disabled={downloading}
+              onClick={async () => {
+                setDownloading(true);
+                setDownloadError(null);
+                try {
+                  const res = await fetch(`/api/video/${job.id}`);
+                  if (!res.ok) {
+                    const body = await res.json();
+                    throw new Error(body.error || "Download failed");
+                  }
+                  const { url } = await res.json();
+                  window.location.href = url;
+                } catch (err) {
+                  setDownloadError(
+                    err instanceof Error ? err.message : "Download failed"
+                  );
+                } finally {
+                  setDownloading(false);
+                }
+              }}
+            >
+              {downloading ? "Preparing download..." : "Download Video"}
+            </Button>
+            {downloadError && (
+              <p className="mt-2 text-center text-sm text-red-600">
+                {downloadError}
+              </p>
             )}
+          </div>
+        )}
 
-            {user && (
-              <FeedbackWidget jobId={job.id} userId={user.id} />
-            )}
+        {job.status === "ready" && user && (
+          <div className="mt-8">
+            <FeedbackWidget jobId={job.id} userId={user.id} />
           </div>
         )}
 
