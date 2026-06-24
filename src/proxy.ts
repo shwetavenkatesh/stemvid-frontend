@@ -2,6 +2,18 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true") {
+    if (
+      !path.startsWith("/admin") &&
+      !path.startsWith("/maintenance") &&
+      !path.startsWith("/api")
+    ) {
+      return NextResponse.rewrite(new URL("/maintenance", request.url));
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
