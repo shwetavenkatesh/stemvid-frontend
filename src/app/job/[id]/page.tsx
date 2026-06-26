@@ -100,7 +100,7 @@ export default function JobPage() {
 
         {job.status !== "ready" && job.status !== "failed" && (
           <p className="mt-4 text-center text-sm text-gray-500">
-            This usually takes 8–12 minutes. This page updates automatically —
+            This usually takes 10–15 minutes. This page updates automatically —
             you can also check back from your dashboard.
           </p>
         )}
