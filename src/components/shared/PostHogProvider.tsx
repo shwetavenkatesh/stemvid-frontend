@@ -1,11 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
-import { initPostHog } from "@/lib/posthog";
+import { useEffect, Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { initPostHog, posthog } from "@/lib/posthog";
 
-export default function PostHogProvider() {
+function PostHogPageView() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     initPostHog();
-  }, []);
+    posthog.capture("$pageview", {
+      $current_url: window.location.href,
+    });
+  }, [pathname, searchParams]);
+
   return null;
+}
+
+export default function PostHogProvider() {
+  return (
+    <Suspense fallback={null}>
+      <PostHogPageView />
+    </Suspense>
+  );
 }

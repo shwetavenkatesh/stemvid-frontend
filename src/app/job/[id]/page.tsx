@@ -8,6 +8,7 @@ import Navbar from "@/components/shared/Navbar";
 import StatusTracker from "@/components/job/StatusTracker";
 import FeedbackWidget from "@/components/job/FeedbackWidget";
 import Button from "@/components/shared/Button";
+import { trackEvent } from "@/lib/posthog";
 import type { Job } from "@/types";
 
 export default function JobPage() {
@@ -112,6 +113,7 @@ export default function JobPage() {
                     throw new Error(body.error || "Download failed");
                   }
                   const { url } = await res.json();
+                  trackEvent("download_clicked", { job_id: job.id });
                   window.location.href = url;
                 } catch (err) {
                   setDownloadError(

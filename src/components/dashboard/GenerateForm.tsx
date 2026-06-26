@@ -72,7 +72,7 @@ export default function GenerateForm({
       return;
     }
 
-    trackEvent("paper_uploaded", { title, tier });
+    trackEvent("paper_uploaded", { content_type: "paper", title, tier });
     setFile(null);
     setTitle("");
     setSubmitting(false);

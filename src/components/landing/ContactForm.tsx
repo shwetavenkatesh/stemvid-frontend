@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/components/shared/Button";
+import { trackEvent } from "@/lib/posthog";
 
 export default function ContactForm() {
   const [name, setName] = useState("");
@@ -25,6 +26,7 @@ export default function ContactForm() {
       setError("Failed to send message. Please try again.");
       return;
     }
+    trackEvent("contact_form_submitted");
     setSubmitted(true);
   }
 

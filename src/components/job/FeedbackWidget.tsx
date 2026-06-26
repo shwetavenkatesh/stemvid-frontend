@@ -93,7 +93,10 @@ export default function FeedbackWidget({
       }),
     });
 
-    trackEvent("feedback_submitted", { job_id: jobId, accurate });
+    trackEvent("feedback_submitted", {
+      job_id: jobId,
+      rating: accurate === "Yes" ? "thumbs_up" : "thumbs_down",
+    });
     setLoading(false);
     setSubmitted(true);
   }
