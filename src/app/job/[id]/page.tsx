@@ -98,6 +98,13 @@ export default function JobPage() {
           <StatusTracker status={job.status} />
         </div>
 
+        {job.status !== "ready" && job.status !== "failed" && (
+          <p className="mt-4 text-center text-sm text-gray-500">
+            This usually takes 8–12 minutes. This page updates automatically —
+            you can also check back from your dashboard.
+          </p>
+        )}
+
         {job.status === "ready" && job.video_url && (
           <div className="mt-8">
             <Button

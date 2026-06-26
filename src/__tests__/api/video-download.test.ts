@@ -196,7 +196,7 @@ describe("GET /api/video/[jobId]", () => {
     );
   });
 
-  it("passes correct R2 object key", async () => {
+  it("passes correct R2 object key for new path format", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
     });
@@ -205,7 +205,7 @@ describe("GET /api/video/[jobId]", () => {
       user_id: "user-1",
       title: "Test",
       status: "ready",
-      video_url: "videos/job-1/final.mp4",
+      video_url: "videos/finals/job-1/final.mp4",
     });
     mockGetSignedUrl.mockResolvedValue("https://r2.example.com/signed-url");
 
@@ -213,7 +213,7 @@ describe("GET /api/video/[jobId]", () => {
 
     expect(mockGetObjectCommand).toHaveBeenCalledWith(
       expect.objectContaining({
-        Key: "videos/job-1/final.mp4",
+        Key: "videos/finals/job-1/final.mp4",
       })
     );
   });
