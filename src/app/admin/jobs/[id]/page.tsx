@@ -81,7 +81,7 @@ export default function AdminJobPage() {
 
     const indices = segments
       .split(",")
-      .map((s) => parseInt(s.trim(), 10) - 1)
+      .map((s) => parseInt(s.trim(), 10))
       .filter((n) => !isNaN(n) && n >= 0);
 
     if (indices.length === 0) {
@@ -162,7 +162,7 @@ export default function AdminJobPage() {
               <p className="mt-2 text-gray-700">
                 Done:{" "}
                 <span className="font-medium">
-                  {regenLog.done.map((i) => i + 1).join(", ")}
+                  {regenLog.done.join(", ")}
                 </span>
               </p>
             )}
@@ -170,7 +170,7 @@ export default function AdminJobPage() {
               <p className="mt-1 text-red-600">
                 Failed:{" "}
                 <span className="font-medium">
-                  {regenLog.failed.map((i) => i + 1).join(", ")}
+                  {regenLog.failed.join(", ")}
                 </span>
               </p>
             )}
@@ -187,8 +187,8 @@ export default function AdminJobPage() {
             Segments to regenerate
           </label>
           <p className="text-sm text-gray-500">
-            1-based, comma-separated — e.g.{" "}
-            <code className="text-xs">3,7,12</code>
+            Comma-separated segment numbers matching the filename — e.g.{" "}
+            <code className="text-xs">3,7,12</code> regenerates seg_03, seg_07, seg_12
           </p>
           <input
             type="text"
