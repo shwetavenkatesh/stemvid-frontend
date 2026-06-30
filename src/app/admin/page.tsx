@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import type { Job } from "@/types";
@@ -134,7 +135,9 @@ export default function AdminPage() {
                       className="border-b border-gray-100"
                     >
                       <td className="py-3 pr-4 font-medium text-foreground">
-                        {job.title || "Untitled"}
+                        <Link href={`/admin/jobs/${job.id}`} className="hover:underline">
+                          {job.title}
+                        </Link>
                       </td>
                       <td className="py-3 pr-4 text-gray-500">
                         {job.profiles?.email ?? "—"}

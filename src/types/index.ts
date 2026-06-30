@@ -18,6 +18,12 @@ export interface Profile {
   created_at: string;
 }
 
+export interface RegenLog {
+  requested: number[];
+  done: number[];
+  failed: number[];
+}
+
 export interface Job {
   id: string;
   user_id: string;
@@ -27,6 +33,7 @@ export interface Job {
   video_url: string | null;
   created_at: string;
   completed_at: string | null;
+  regen_log: RegenLog | null;
 }
 
 export interface Feedback {

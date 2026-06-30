@@ -11,6 +11,7 @@ describe("types", () => {
       video_url: null,
       created_at: "2026-01-01",
       completed_at: null,
+      regen_log: null,
     };
     expect(job.status).toBe("queued");
   });

@@ -23,6 +23,7 @@ const baseJob: Job = {
   video_url: "https://example.com/video.mp4",
   created_at: "2026-06-20T10:00:00Z",
   completed_at: "2026-06-20T10:12:00Z",
+  regen_log: null,
 };
 
 describe("VideoCard", () => {
