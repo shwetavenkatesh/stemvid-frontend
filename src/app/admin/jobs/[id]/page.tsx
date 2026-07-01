@@ -64,7 +64,12 @@ export default function AdminJobPage() {
           setJob(payload.new as Job);
           if (payload.new.status === "ready" || payload.new.status === "failed") {
             setWorking(false);
-            if (payload.new.status === "ready") setMessage(null);
+            if (payload.new.status === "ready") {
+              // Keep a success message for finalize; regen results are shown in the log panel
+              setMessage((prev) =>
+                prev?.includes("Finalizing") ? "Video finalized — final.mp4 updated in R2." : null
+              );
+            }
           }
         }
       )
