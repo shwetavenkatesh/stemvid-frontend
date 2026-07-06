@@ -42,6 +42,10 @@ export default function FeedbackWidget({
   const [volume, setVolume] = useState("");
   const [content, setContent] = useState("");
   const [recommend, setRecommend] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [willingToPay, setWillingToPay] = useState("");
+  const [wantRegenSegment, setWantRegenSegment] = useState("");
+  const [speedConcern, setSpeedConcern] = useState("");
   const [extra, setExtra] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -66,6 +70,10 @@ export default function FeedbackWidget({
         volume,
         content,
         recommend,
+        purpose,
+        willing_to_pay: willingToPay,
+        want_regen_segment: wantRegenSegment,
+        speed_concern: speedConcern,
         extra,
       }),
     };
@@ -89,6 +97,10 @@ export default function FeedbackWidget({
         volume,
         content,
         recommend,
+        purpose,
+        willing_to_pay: willingToPay,
+        want_regen_segment: wantRegenSegment,
+        speed_concern: speedConcern,
         extra,
       }),
     });
@@ -213,6 +225,40 @@ export default function FeedbackWidget({
           value={recommend}
           onChange={setRecommend}
           options={["Yes", "Maybe", "No"]}
+        />
+        <SelectField
+          label="What do you primarily want to use stemvid.ai for?"
+          value={purpose}
+          onChange={setPurpose}
+          options={[
+            "YouTube / public content",
+            "Classroom or teaching material",
+            "Personal studying / exam prep",
+            "Internal training or corporate learning",
+            "Other",
+          ]}
+        />
+        <SelectField
+          label="Would you be willing to pay for these videos?"
+          value={willingToPay}
+          onChange={setWillingToPay}
+          options={["Yes", "Maybe, depending on price", "No, free tier only"]}
+        />
+        <SelectField
+          label="Would you want the ability to regenerate a specific segment yourself if something looks wrong?"
+          value={wantRegenSegment}
+          onChange={setWantRegenSegment}
+          options={["Yes", "Maybe", "No"]}
+        />
+        <SelectField
+          label="Videos currently take about 10-15 minutes to generate — is that too slow for how you'd use this?"
+          value={speedConcern}
+          onChange={setSpeedConcern}
+          options={[
+            "Yes, I'd want it faster",
+            "It's fine as-is",
+            "No opinion / haven't thought about it",
+          ]}
         />
       </fieldset>
 
