@@ -25,6 +25,11 @@ export default function GenerateForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) return;
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setError("Title cannot be blank.");
+      return;
+    }
     setSubmitting(true);
     setError("");
 
@@ -47,7 +52,7 @@ export default function GenerateForm({
       .from("jobs")
       .insert({
         user_id: userId,
-        title: title || file.name.replace(/\.pdf$/i, ""),
+        title: trimmedTitle,
         pdf_url: filePath,
         status: "queued",
       })
@@ -72,7 +77,7 @@ export default function GenerateForm({
       return;
     }
 
-    trackEvent("paper_uploaded", { content_type: "paper", title, tier });
+    trackEvent("paper_uploaded", { content_type: "paper", title: trimmedTitle, tier });
     setFile(null);
     setTitle("");
     setSubmitting(false);
@@ -132,7 +137,7 @@ export default function GenerateForm({
           htmlFor="title"
           className="block text-sm font-medium text-gray-700"
         >
-          Title (optional)
+          Title
         </label>
         <input
           id="title"

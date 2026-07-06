@@ -4,6 +4,7 @@ import type { Job } from "@/types";
 const statusColors: Record<string, string> = {
   queued: "bg-gray-200 text-gray-700",
   generating_script: "bg-yellow-100 text-yellow-800",
+  generating_audio: "bg-yellow-100 text-yellow-800",
   creating_animations: "bg-yellow-100 text-yellow-800",
   rendering: "bg-blue-100 text-blue-800",
   ready: "bg-green-100 text-green-800",
@@ -13,6 +14,7 @@ const statusColors: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   queued: "Queued",
   generating_script: "Generating script",
+  generating_audio: "Generating audio",
   creating_animations: "Creating animations",
   rendering: "Rendering",
   ready: "Ready",

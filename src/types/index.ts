@@ -3,6 +3,7 @@ export type Tier = "free" | "pro";
 export type JobStatus =
   | "queued"
   | "generating_script"
+  | "generating_audio"
   | "creating_animations"
   | "rendering"
   | "ready"

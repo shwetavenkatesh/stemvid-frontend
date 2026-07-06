@@ -3,6 +3,7 @@ import type { JobStatus } from "@/types";
 const steps: { key: JobStatus; label: string }[] = [
   { key: "queued", label: "Queued" },
   { key: "generating_script", label: "Generating script" },
+  { key: "generating_audio", label: "Generating audio" },
   { key: "creating_animations", label: "Creating animations" },
   { key: "rendering", label: "Rendering" },
   { key: "ready", label: "Ready" },

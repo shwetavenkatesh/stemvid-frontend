@@ -10,7 +10,7 @@ describe("StatusTracker", () => {
   it("marks completed steps with checkmark", () => {
     render(<StatusTracker status="rendering" />);
     const steps = screen.getAllByText("✓");
-    expect(steps).toHaveLength(3);
+    expect(steps).toHaveLength(4);
   });
 
   it("highlights current step", () => {
@@ -18,10 +18,15 @@ describe("StatusTracker", () => {
     expect(screen.getByText("Generating script...")).toBeInTheDocument();
   });
 
+  it("highlights generating_audio step", () => {
+    render(<StatusTracker status="generating_audio" />);
+    expect(screen.getByText("Generating audio...")).toBeInTheDocument();
+  });
+
   it("shows all steps completed when ready", () => {
     render(<StatusTracker status="ready" />);
     const checks = screen.getAllByText("✓");
-    expect(checks).toHaveLength(4);
+    expect(checks).toHaveLength(5);
     expect(screen.getByText("Ready")).toBeInTheDocument();
   });
 

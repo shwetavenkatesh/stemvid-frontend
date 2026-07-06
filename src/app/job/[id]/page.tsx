@@ -90,7 +90,11 @@ export default function JobPage() {
     <>
       <Navbar user={user} />
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-        <h1 className="text-2xl font-bold text-foreground">
+        <Link href="/dashboard">
+          <Button variant="secondary">&#8592; Back to dashboard</Button>
+        </Link>
+
+        <h1 className="mt-6 text-2xl font-bold text-foreground">
           {job.title || "Untitled video"}
         </h1>
 
@@ -146,14 +150,6 @@ export default function JobPage() {
             <FeedbackWidget jobId={job.id} userId={user.id} />
           </div>
         )}
-
-        <div className="mt-10">
-          <Link href="/dashboard">
-            <Button variant="secondary">
-              &#8592; Back to dashboard
-            </Button>
-          </Link>
-        </div>
       </main>
     </>
   );
