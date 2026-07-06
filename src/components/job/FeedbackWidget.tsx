@@ -37,15 +37,8 @@ export default function FeedbackWidget({
   const [clarity, setClarity] = useState("");
   const [animations, setAnimations] = useState("");
   const [improve, setImprove] = useState("");
-  const [expectations, setExpectations] = useState("");
   const [useAgain, setUseAgain] = useState("");
-  const [volume, setVolume] = useState("");
-  const [content, setContent] = useState("");
-  const [recommend, setRecommend] = useState("");
   const [purpose, setPurpose] = useState("");
-  const [willingToPay, setWillingToPay] = useState("");
-  const [wantRegenSegment, setWantRegenSegment] = useState("");
-  const [speedConcern, setSpeedConcern] = useState("");
   const [extra, setExtra] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,15 +58,8 @@ export default function FeedbackWidget({
         clarity,
         animations,
         improve,
-        expectations,
         use_again: useAgain,
-        volume,
-        content,
-        recommend,
         purpose,
-        willing_to_pay: willingToPay,
-        want_regen_segment: wantRegenSegment,
-        speed_concern: speedConcern,
         extra,
       }),
     };
@@ -92,15 +78,8 @@ export default function FeedbackWidget({
         clarity,
         animations,
         improve,
-        expectations,
         use_again: useAgain,
-        volume,
-        content,
-        recommend,
         purpose,
-        willing_to_pay: willingToPay,
-        want_regen_segment: wantRegenSegment,
-        speed_concern: speedConcern,
         extra,
       }),
     });
@@ -185,12 +164,6 @@ export default function FeedbackWidget({
             className="mt-1 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-foreground placeholder:text-gray-300 focus:border-teal focus:outline-none"
           />
         </div>
-        <SelectField
-          label="Did it meet your expectations?"
-          value={expectations}
-          onChange={setExpectations}
-          options={["Exceeded", "Met", "Below"]}
-        />
       </fieldset>
 
       <fieldset className="space-y-4">
@@ -204,29 +177,6 @@ export default function FeedbackWidget({
           options={["Definitely", "Probably", "Probably not", "No"]}
         />
         <SelectField
-          label="How many videos do you plan to create per month?"
-          value={volume}
-          onChange={setVolume}
-          options={["1-2", "3-5", "6-10", "10+"]}
-        />
-        <SelectField
-          label="What content would you most want to create?"
-          value={content}
-          onChange={setContent}
-          options={[
-            "Research papers",
-            "Textbook chapters",
-            "Lecture notes",
-            "Other",
-          ]}
-        />
-        <SelectField
-          label="Would you recommend stemvid.ai to a colleague?"
-          value={recommend}
-          onChange={setRecommend}
-          options={["Yes", "Maybe", "No"]}
-        />
-        <SelectField
           label="What do you primarily want to use stemvid.ai for?"
           value={purpose}
           onChange={setPurpose}
@@ -236,28 +186,6 @@ export default function FeedbackWidget({
             "Personal studying / exam prep",
             "Internal training or corporate learning",
             "Other",
-          ]}
-        />
-        <SelectField
-          label="Would you be willing to pay for these videos?"
-          value={willingToPay}
-          onChange={setWillingToPay}
-          options={["Yes", "Maybe, depending on price", "No, free tier only"]}
-        />
-        <SelectField
-          label="Would you want the ability to regenerate a specific segment yourself if something looks wrong?"
-          value={wantRegenSegment}
-          onChange={setWantRegenSegment}
-          options={["Yes", "Maybe", "No"]}
-        />
-        <SelectField
-          label="Videos currently take about 10-15 minutes to generate — is that too slow for how you'd use this?"
-          value={speedConcern}
-          onChange={setSpeedConcern}
-          options={[
-            "Yes, I'd want it faster",
-            "It's fine as-is",
-            "No opinion / haven't thought about it",
           ]}
         />
       </fieldset>
