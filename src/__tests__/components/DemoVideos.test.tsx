@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import DemoVideos from "@/components/landing/DemoVideos";
 
 describe("DemoVideos", () => {
@@ -15,27 +15,40 @@ describe("DemoVideos", () => {
     expect(captions).toHaveLength(3);
   });
 
-  it("links each demo to its real YouTube video, opened in a new tab", () => {
-    render(<DemoVideos />);
-    const expected: Record<string, string> = {
-      "Attention Is All You Need": "https://youtu.be/z-q1aw_2LWY",
-      "Dremel: Interactive Analysis": "https://youtu.be/7wCx8iQHaRM",
-      MapReduce: "https://youtu.be/KZvrVlAYqGc",
-    };
-    const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(3);
-    for (const link of links) {
-      const title = link.querySelector("h3")?.textContent ?? "";
-      expect(link).toHaveAttribute("href", expected[title]);
-      expect(link).toHaveAttribute("target", "_blank");
-      expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
-    }
-  });
-
   it("renders a thumbnail image for each demo", () => {
     render(<DemoVideos />);
     expect(screen.getByAltText("Attention Is All You Need")).toBeInTheDocument();
     expect(screen.getByAltText("Dremel: Interactive Analysis")).toBeInTheDocument();
     expect(screen.getByAltText("MapReduce")).toBeInTheDocument();
+  });
+
+  it("does not load any YouTube iframe before a demo is clicked", () => {
+    render(<DemoVideos />);
+    expect(document.querySelector("iframe")).not.toBeInTheDocument();
+  });
+
+  it("plays the correct video inline when its thumbnail is clicked", () => {
+    render(<DemoVideos />);
+    fireEvent.click(screen.getByRole("button", { name: "Play MapReduce" }));
+    const iframe = document.querySelector("iframe");
+    expect(iframe).toBeInTheDocument();
+    expect(iframe).toHaveAttribute(
+      "src",
+      "https://www.youtube.com/embed/KZvrVlAYqGc?autoplay=1"
+    );
+  });
+
+  it("only plays one video at a time", () => {
+    render(<DemoVideos />);
+    fireEvent.click(screen.getByRole("button", { name: "Play MapReduce" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Play Attention Is All You Need" })
+    );
+    const iframes = document.querySelectorAll("iframe");
+    expect(iframes).toHaveLength(1);
+    expect(iframes[0]).toHaveAttribute(
+      "src",
+      "https://www.youtube.com/embed/z-q1aw_2LWY?autoplay=1"
+    );
   });
 });
