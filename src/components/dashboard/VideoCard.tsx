@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Job } from "@/types";
 
-const statusColors: Record<string, string> = {
+export const jobStatusColors: Record<string, string> = {
   queued: "bg-gray-200 text-gray-700",
   generating_script: "bg-yellow-100 text-yellow-800",
   generating_audio: "bg-yellow-100 text-yellow-800",
@@ -11,7 +11,7 @@ const statusColors: Record<string, string> = {
   failed: "bg-red-100 text-red-800",
 };
 
-const statusLabels: Record<string, string> = {
+export const jobStatusLabels: Record<string, string> = {
   queued: "Queued",
   generating_script: "Generating script",
   generating_audio: "Generating audio",
@@ -40,9 +40,9 @@ export default function VideoCard({ job }: { job: Job }) {
         </h3>
         <div className="mt-2 flex items-center justify-between">
           <span
-            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[job.status] ?? statusColors.queued}`}
+            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${jobStatusColors[job.status] ?? jobStatusColors.queued}`}
           >
-            {statusLabels[job.status] ?? job.status}
+            {jobStatusLabels[job.status] ?? job.status}
           </span>
           <span className="text-xs text-gray-500">
             {new Date(job.created_at).toLocaleDateString()}

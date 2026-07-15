@@ -6,11 +6,12 @@ import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import Modal from "@/components/shared/Modal";
 import VideoCard from "@/components/dashboard/VideoCard";
+import CourseCard from "@/components/dashboard/CourseCard";
 import GenerateForm from "@/components/dashboard/GenerateForm";
 import EmptyState from "@/components/dashboard/EmptyState";
 import Button from "@/components/shared/Button";
 import Link from "next/link";
-import type { Job, Profile } from "@/types";
+import type { Job, Course, Profile } from "@/types";
 
 const VIDEO_LIMITS = { free: 2, pro: 7 };
 
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
@@ -30,6 +32,15 @@ export default function DashboardPage() {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (data) setJobs(data);
+  }, []);
+
+  const loadCourses = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("courses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (data) setCourses(data);
   }, []);
 
   useEffect(() => {
@@ -50,11 +61,11 @@ export default function DashboardPage() {
         .single();
       if (profileData) setProfile(profileData);
 
-      await loadJobs(authUser.id);
+      await Promise.all([loadJobs(authUser.id), loadCourses(authUser.id)]);
       setLoading(false);
     }
     init();
-  }, [router, loadJobs]);
+  }, [router, loadJobs, loadCourses]);
 
   if (loading) {
     return (
@@ -103,17 +114,44 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="mt-10">
-          {jobs.length === 0 ? (
-            <EmptyState onGenerate={() => setShowForm(true)} />
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {jobs.map((job) => (
-                <VideoCard key={job.id} job={job} />
-              ))}
+        {(() => {
+          const standaloneJobs = jobs.filter((job) => !job.course_id);
+          const isEmpty = standaloneJobs.length === 0 && courses.length === 0;
+          return isEmpty ? (
+            <div className="mt-10">
+              <EmptyState onGenerate={() => setShowForm(true)} />
             </div>
-          )}
-        </div>
+          ) : (
+            <>
+              {courses.length > 0 && (
+                <div className="mt-10">
+                  <h2 className="text-lg font-semibold text-foreground">
+                    Courses
+                  </h2>
+                  <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {courses.map((course) => (
+                      <CourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {standaloneJobs.length > 0 && (
+                <div className="mt-10">
+                  {courses.length > 0 && (
+                    <h2 className="text-lg font-semibold text-foreground">
+                      Papers
+                    </h2>
+                  )}
+                  <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {standaloneJobs.map((job) => (
+                      <VideoCard key={job.id} job={job} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </main>
 
       <Modal open={showForm} onClose={() => setShowForm(false)}>
@@ -123,7 +161,10 @@ export default function DashboardPage() {
             tier={tier}
             onCreated={() => {
               setShowForm(false);
-              if (user) loadJobs(user.id);
+              if (user) {
+                loadJobs(user.id);
+                loadCourses(user.id);
+              }
             }}
           />
         )}

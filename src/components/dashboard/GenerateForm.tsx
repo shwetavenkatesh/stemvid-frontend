@@ -16,6 +16,7 @@ export default function GenerateForm({
   onCreated: () => void;
 }) {
   const supabase = createClient();
+  const [contentType, setContentType] = useState<"paper" | "book">("paper");
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -44,12 +45,9 @@ export default function GenerateForm({
       return;
     }
 
-    const { data: urlData } = supabase.storage
-      .from("pdfs")
-      .getPublicUrl(filePath);
-
-    const { data: jobData, error: insertError } = await supabase
-      .from("jobs")
+    const table = contentType === "book" ? "courses" : "jobs";
+    const { data: recordData, error: insertError } = await supabase
+      .from(table)
       .insert({
         user_id: userId,
         title: trimmedTitle,
@@ -59,25 +57,42 @@ export default function GenerateForm({
       .select("id")
       .single();
 
-    if (insertError || !jobData) {
-      setError("Failed to create job. Try again.");
+    if (insertError || !recordData) {
+      setError(
+        contentType === "book"
+          ? "Failed to create course. Try again."
+          : "Failed to create job. Try again."
+      );
       setSubmitting(false);
       return;
     }
+
+    const triggerBody =
+      contentType === "book"
+        ? { type: "book", course_id: recordData.id }
+        : { type: "paper", job_id: recordData.id };
 
     const triggerResp = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "paper", job_id: jobData.id }),
+      body: JSON.stringify(triggerBody),
     });
 
     if (!triggerResp.ok) {
-      setError("Job created but failed to start pipeline. Try again.");
+      setError(
+        contentType === "book"
+          ? "Course created but failed to start pipeline. Try again."
+          : "Job created but failed to start pipeline. Try again."
+      );
       setSubmitting(false);
       return;
     }
 
-    trackEvent("paper_uploaded", { content_type: "paper", title: trimmedTitle, tier });
+    trackEvent(contentType === "book" ? "book_uploaded" : "paper_uploaded", {
+      content_type: contentType,
+      title: trimmedTitle,
+      tier,
+    });
     setFile(null);
     setTitle("");
     setSubmitting(false);
@@ -98,6 +113,23 @@ export default function GenerateForm({
       <h2 className="text-lg font-semibold text-foreground">
         Generate new video
       </h2>
+
+      <div className="flex rounded-md border border-gray-200 p-1">
+        {(["paper", "book"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setContentType(option)}
+            className={`flex-1 rounded px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+              contentType === option
+                ? "bg-teal text-white"
+                : "text-gray-600 hover:text-foreground"
+            }`}
+          >
+            {option === "paper" ? "Research paper" : "Book"}
+          </button>
+        ))}
+      </div>
 
       <div
         onDrop={handleDrop}
@@ -126,7 +158,9 @@ export default function GenerateForm({
               Drop your PDF here or click to browse
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              PDF research papers and textbooks
+              {contentType === "book"
+                ? "PDF textbooks and workbooks"
+                : "PDF research papers"}
             </p>
           </>
         )}
@@ -150,14 +184,19 @@ export default function GenerateForm({
       </div>
 
       <p className="text-xs text-gray-500">
-        Currently generating videos in 10-15 minutes. Priority processing
-        coming soon for early access members.
+        {contentType === "book"
+          ? "We'll build a full video course from your book and generate the first video in 10-15 minutes. You'll generate the rest one at a time from the course page."
+          : "Currently generating videos in 10-15 minutes. Priority processing coming soon for early access members."}
       </p>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <Button type="submit" disabled={!file || submitting} className="w-full">
-        {submitting ? "Uploading..." : "Generate video"}
+        {submitting
+          ? "Uploading..."
+          : contentType === "book"
+            ? "Generate course"
+            : "Generate video"}
       </Button>
     </form>
   );
