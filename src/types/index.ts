@@ -37,6 +37,7 @@ export interface Job {
   regen_log: RegenLog | null;
   course_id?: string | null;
   video_index?: number | null;
+  error_message?: string | null;
 }
 
 export type CourseStatus =

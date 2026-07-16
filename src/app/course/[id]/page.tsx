@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import Button from "@/components/shared/Button";
 import { jobStatusColors, jobStatusLabels } from "@/components/dashboard/VideoCard";
-import { getCourseProgress } from "@/lib/courseProgress";
+import { getCourseProgress, type PendingTrigger } from "@/lib/courseProgress";
 import type { Course, Job } from "@/types";
 
 const courseStatusLabels: Record<string, string> = {
@@ -29,12 +29,12 @@ export default function CoursePage() {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [triggerError, setTriggerError] = useState<string | null>(null);
-  // Set right after a successful trigger POST and held until the corresponding job row
-  // actually shows up via loadJobs/realtime — Modal's spawn is async, so there's a window
-  // where the row doesn't exist in Supabase yet even though the video is already running.
-  // Without this, a page remount or slow realtime delivery in that window would show the
-  // "Generate video N" button again and let it be double-triggered.
-  const [pendingPosition, setPendingPosition] = useState<number | null>(null);
+  // Set right after a successful trigger POST and held until the job row at that position
+  // actually changes to a different id (see courseProgress.ts) — Modal's spawn is async, so
+  // there's a window where either no row exists yet (first generation) or the old failed
+  // row is still what's in Supabase (retry). Without this, a page remount or slow realtime
+  // delivery in that window would show the button again and let it be double-triggered.
+  const [pendingTrigger, setPendingTrigger] = useState<PendingTrigger | null>(null);
 
   const loadJobs = useCallback(
     async (courseId: string) => {
@@ -131,13 +131,14 @@ export default function CoursePage() {
   const videos = course.course_structure?.videos ?? [];
   // course_structure.videos is ordered but its "index" field is author-assigned metadata,
   // not the wire index — position in this array is what jobs.video_index actually matches.
-  const { jobByPosition, readyCount, nextPosition, canGenerateNext, firstVideoStarting } =
-    getCourseProgress(videos, courseJobs, course.status, pendingPosition);
+  const { jobByPosition, readyCount, nextPosition, canGenerateNext, isRetry, firstVideoStarting } =
+    getCourseProgress(videos, courseJobs, course.status, pendingTrigger);
 
   async function handleGenerateNext() {
     if (!course) return;
     setTriggering(true);
     setTriggerError(null);
+    const priorJobId = jobByPosition.get(nextPosition)?.id ?? null;
     const resp = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -148,9 +149,13 @@ export default function CoursePage() {
       }),
     });
     if (!resp.ok) {
-      setTriggerError("Failed to start the next video. Try again.");
+      setTriggerError(
+        isRetry
+          ? "Failed to retry this video. Try again."
+          : "Failed to start the next video. Try again."
+      );
     } else {
-      setPendingPosition(nextPosition);
+      setPendingTrigger({ position: nextPosition, priorJobId });
       await loadJobs(course.id);
     }
     setTriggering(false);
@@ -197,37 +202,44 @@ export default function CoursePage() {
               return (
                 <div
                   key={position}
-                  className={`flex items-center justify-between rounded-lg border border-gray-200 p-4 ${
+                  className={`rounded-lg border border-gray-200 p-4 ${
                     job?.status === "ready" ? "hover:shadow-md" : ""
                   }`}
                 >
-                  <div className="min-w-0">
-                    <p className="text-xs text-gray-500">
-                      Video {videoNumber}
-                    </p>
-                    <p className="truncate font-medium text-foreground">
-                      {video.title}
-                    </p>
-                  </div>
-                  {job ? (
-                    job.status === "ready" ? (
-                      <Link
-                        href={`/job/${job.id}`}
-                        className="ml-4 shrink-0 text-sm font-medium text-teal hover:underline"
-                      >
-                        View
-                      </Link>
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500">
+                        Video {videoNumber}
+                      </p>
+                      <p className="truncate font-medium text-foreground">
+                        {video.title}
+                      </p>
+                    </div>
+                    {job ? (
+                      job.status === "ready" ? (
+                        <Link
+                          href={`/job/${job.id}`}
+                          className="ml-4 shrink-0 text-sm font-medium text-teal hover:underline"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        <span
+                          className={`ml-4 shrink-0 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${jobStatusColors[job.status] ?? jobStatusColors.queued}`}
+                        >
+                          {jobStatusLabels[job.status] ?? job.status}
+                        </span>
+                      )
                     ) : (
-                      <span
-                        className={`ml-4 shrink-0 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${jobStatusColors[job.status] ?? jobStatusColors.queued}`}
-                      >
-                        {jobStatusLabels[job.status] ?? job.status}
+                      <span className="ml-4 shrink-0 text-xs text-gray-400">
+                        Not started
                       </span>
-                    )
-                  ) : (
-                    <span className="ml-4 shrink-0 text-xs text-gray-400">
-                      Not started
-                    </span>
+                    )}
+                  </div>
+                  {job?.status === "failed" && job.error_message && (
+                    <p className="mt-2 text-xs text-red-600">
+                      {job.error_message}
+                    </p>
                   )}
                 </div>
               );
@@ -244,7 +256,9 @@ export default function CoursePage() {
             >
               {triggering
                 ? "Starting..."
-                : `Generate video ${nextPosition + 1}`}
+                : isRetry
+                  ? `Retry video ${nextPosition + 1}`
+                  : `Generate video ${nextPosition + 1}`}
             </Button>
             {triggerError && (
               <p className="mt-2 text-center text-sm text-red-600">
