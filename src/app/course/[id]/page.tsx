@@ -194,6 +194,27 @@ export default function CoursePage() {
           <p className="mt-4 text-sm text-red-600">{course.error_message}</p>
         )}
 
+        {canGenerateNext && (
+          <div className="mt-6">
+            <Button
+              className="w-full"
+              disabled={triggering}
+              onClick={handleGenerateNext}
+            >
+              {triggering
+                ? "Starting..."
+                : isRetry
+                  ? `Retry video ${nextPosition + 1}`
+                  : `Generate video ${nextPosition + 1}`}
+            </Button>
+            {triggerError && (
+              <p className="mt-2 text-center text-sm text-red-600">
+                {triggerError}
+              </p>
+            )}
+          </div>
+        )}
+
         {videos.length > 0 && (
           <div className="mt-8 space-y-3">
             {videos.map((video, position) => {
@@ -244,27 +265,6 @@ export default function CoursePage() {
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {canGenerateNext && (
-          <div className="mt-8">
-            <Button
-              className="w-full"
-              disabled={triggering}
-              onClick={handleGenerateNext}
-            >
-              {triggering
-                ? "Starting..."
-                : isRetry
-                  ? `Retry video ${nextPosition + 1}`
-                  : `Generate video ${nextPosition + 1}`}
-            </Button>
-            {triggerError && (
-              <p className="mt-2 text-center text-sm text-red-600">
-                {triggerError}
-              </p>
-            )}
           </div>
         )}
       </main>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Button from "@/components/shared/Button";
-import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/posthog";
 
 const roles = [
@@ -30,7 +29,6 @@ export default function FeedbackWidget({
   jobId: string;
   userId: string;
 }) {
-  const supabase = createClient();
   const [role, setRole] = useState("");
   const [field, setField] = useState("");
   const [accurate, setAccurate] = useState("");
@@ -42,36 +40,19 @@ export default function FeedbackWidget({
   const [extra, setExtra] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
     setLoading(true);
 
-    const feedbackData = {
-      job_id: jobId,
-      user_id: userId,
-      rating: accurate === "Yes" ? "thumbs_up" : "thumbs_down",
-      reason: JSON.stringify({
-        role,
-        field,
-        accurate,
-        clarity,
-        animations,
-        improve,
-        use_again: useAgain,
-        purpose,
-        extra,
-      }),
-    };
-
-    await supabase.from("feedback").insert(feedbackData);
-
-    await fetch("/api/feedback", {
+    const res = await fetch("/api/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        source: "video_feedback",
         job_id: jobId,
+        user_id: userId,
         role,
         field,
         accurate,
@@ -84,11 +65,17 @@ export default function FeedbackWidget({
       }),
     });
 
+    setLoading(false);
+
+    if (!res.ok) {
+      setError("Failed to submit feedback. Please try again.");
+      return;
+    }
+
     trackEvent("feedback_submitted", {
       job_id: jobId,
-      rating: accurate === "Yes" ? "thumbs_up" : "thumbs_down",
+      accurate,
     });
-    setLoading(false);
     setSubmitted(true);
   }
 
@@ -206,6 +193,8 @@ export default function FeedbackWidget({
           />
         </div>
       </fieldset>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <Button type="submit" disabled={loading} className="w-full">
         {loading ? "Submitting..." : "Submit feedback"}

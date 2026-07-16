@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import Button from "@/components/shared/Button";
-import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/posthog";
 
 export default function EarlyAccess() {
-  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -17,22 +15,25 @@ export default function EarlyAccess() {
     setError("");
     setLoading(true);
 
-    const { error: dbError } = await supabase
-      .from("waitlist")
-      .insert({ email });
+    const res = await fetch("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
 
-    if (dbError) {
+    setLoading(false);
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
       setError(
-        dbError.code === "23505"
+        body.error === "duplicate"
           ? "You're already on the waitlist!"
           : "Something went wrong. Try again."
       );
-      setLoading(false);
       return;
     }
 
     trackEvent("waitlist_signup", { email });
-    setLoading(false);
     setSubmitted(true);
   }
 
