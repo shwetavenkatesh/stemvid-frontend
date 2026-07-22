@@ -1,11 +1,14 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import GenerateForm from "@/components/dashboard/GenerateForm";
 
-const mockFrom = jest.fn((_table: string) => ({
-  insert: (_row: Record<string, unknown>) => ({
-    select: () => ({ single: async () => ({ data: { id: "new-id" }, error: null }) }),
-  }),
-}));
+const mockFrom = jest.fn((table: string) => {
+  void table;
+  return {
+    insert: () => ({
+      select: () => ({ single: async () => ({ data: { id: "new-id" }, error: null }) }),
+    }),
+  };
+});
 
 jest.mock("@/lib/supabase", () => ({
   createClient: () => ({

@@ -236,7 +236,7 @@ export default function CoursePage() {
                 <div
                   key={position}
                   className={`rounded-lg border border-gray-200 p-4 ${
-                    job?.status === "ready" ? "hover:shadow-md" : ""
+                    job ? "hover:shadow-md" : ""
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -249,20 +249,22 @@ export default function CoursePage() {
                       </p>
                     </div>
                     {job ? (
-                      job.status === "ready" ? (
-                        <Link
-                          href={`/job/${job.id}`}
-                          className="ml-4 shrink-0 text-sm font-medium text-teal hover:underline"
-                        >
-                          View
-                        </Link>
-                      ) : (
-                        <span
-                          className={`ml-4 shrink-0 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${jobStatusColors[job.status] ?? jobStatusColors.queued}`}
-                        >
-                          {jobStatusLabels[job.status] ?? job.status}
-                        </span>
-                      )
+                      // /job/[id] already shows the live step-by-step status (and the
+                      // feedback form once ready) for any job regardless of status —
+                      // no need to wait for "ready" before this becomes clickable.
+                      <Link href={`/job/${job.id}`} className="ml-4 shrink-0">
+                        {job.status === "ready" ? (
+                          <span className="text-sm font-medium text-teal hover:underline">
+                            View
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${jobStatusColors[job.status] ?? jobStatusColors.queued}`}
+                          >
+                            {jobStatusLabels[job.status] ?? job.status}
+                          </span>
+                        )}
+                      </Link>
                     ) : (
                       <span className="ml-4 shrink-0 text-xs text-gray-400">
                         Not started

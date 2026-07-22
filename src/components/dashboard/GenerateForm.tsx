@@ -192,7 +192,7 @@ export default function GenerateForm({
       <p className="text-xs text-gray-500">
         {contentType === "book"
           ? "We'll build a full video course from your book and generate the first video in 10-15 minutes. You'll generate the rest one at a time from the course page."
-          : "We'll plan your paper into one or more parts and generate the first one in 10-15 minutes. You'll generate the rest one at a time from the paper page. Priority processing coming soon for early access members."}
+          : "We'll plan your paper into one or more parts and generate the first one in 10-15 minutes. You'll generate the rest one at a time from the paper page."}
       </p>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
