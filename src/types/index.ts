@@ -52,16 +52,29 @@ export interface CourseVideoInfo {
   index: number;
   title: string;
   concepts: string[];
-  chapter_reference: string;
-  source_section: string;
+  chapter_reference?: string;
+  source_section?: string;
 }
 
-export interface CourseStructure {
+export interface BookCourseStructure {
   course_title: string;
   book: string;
   total_videos: number;
   videos: CourseVideoInfo[];
 }
+
+export interface PaperCourseStructure {
+  paper_title: string;
+  total_concepts: number;
+  total_parts: number;
+  parts: CourseVideoInfo[];
+}
+
+export type CourseStructure = BookCourseStructure | PaperCourseStructure;
+
+// NULL means "book" — source_type didn't exist before papers could reach the
+// courses table, so every pre-existing row predates the column entirely.
+export type CourseSourceType = "book" | "paper" | null;
 
 export interface Course {
   id: string;
@@ -69,6 +82,7 @@ export interface Course {
   title: string;
   pdf_url: string;
   status: CourseStatus;
+  source_type?: CourseSourceType;
   course_structure: CourseStructure | null;
   total_videos: number | null;
   completed_videos: number | null;

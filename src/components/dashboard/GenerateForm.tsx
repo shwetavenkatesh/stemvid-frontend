@@ -45,14 +45,20 @@ export default function GenerateForm({
       return;
     }
 
-    const table = contentType === "book" ? "courses" : "jobs";
+    // Papers go through the courses table too now — the concept-inventory +
+    // part-split pipeline needs a courses row same as books do, not a jobs row
+    // (a short paper just naturally comes back as a single part).
     const { data: recordData, error: insertError } = await supabase
-      .from(table)
+      .from("courses")
       .insert({
         user_id: userId,
         title: trimmedTitle,
         pdf_url: filePath,
         status: "queued",
+        // Set immediately rather than waiting on the backend's structure step to set
+        // it — otherwise a brand-new row shows as a book (wrong copy) for however long
+        // building_structure takes, since the frontend already knows which one this is.
+        source_type: contentType,
       })
       .select("id")
       .single();
@@ -61,7 +67,7 @@ export default function GenerateForm({
       setError(
         contentType === "book"
           ? "Failed to create course. Try again."
-          : "Failed to create job. Try again."
+          : "Failed to create paper. Try again."
       );
       setSubmitting(false);
       return;
@@ -70,7 +76,7 @@ export default function GenerateForm({
     const triggerBody =
       contentType === "book"
         ? { type: "book", course_id: recordData.id }
-        : { type: "paper", job_id: recordData.id };
+        : { type: "paper_course", course_id: recordData.id };
 
     const triggerResp = await fetch("/api/generate", {
       method: "POST",
@@ -82,7 +88,7 @@ export default function GenerateForm({
       setError(
         contentType === "book"
           ? "Course created but failed to start pipeline. Try again."
-          : "Job created but failed to start pipeline. Try again."
+          : "Paper created but failed to start pipeline. Try again."
       );
       setSubmitting(false);
       return;
@@ -159,8 +165,8 @@ export default function GenerateForm({
             </p>
             <p className="mt-1 text-xs text-gray-500">
               {contentType === "book"
-                ? "PDF textbooks and workbooks"
-                : "PDF research papers"}
+                ? "Long PDFs with a table of contents — textbooks and workbooks"
+                : "Anything that isn't a book — research papers or any other PDF"}
             </p>
           </>
         )}
@@ -186,7 +192,7 @@ export default function GenerateForm({
       <p className="text-xs text-gray-500">
         {contentType === "book"
           ? "We'll build a full video course from your book and generate the first video in 10-15 minutes. You'll generate the rest one at a time from the course page."
-          : "Currently generating videos in 10-15 minutes. Priority processing coming soon for early access members."}
+          : "We'll plan your paper into one or more parts and generate the first one in 10-15 minutes. You'll generate the rest one at a time from the paper page. Priority processing coming soon for early access members."}
       </p>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -196,7 +202,7 @@ export default function GenerateForm({
           ? "Uploading..."
           : contentType === "book"
             ? "Generate course"
-            : "Generate video"}
+            : "Generate paper"}
       </Button>
     </form>
   );

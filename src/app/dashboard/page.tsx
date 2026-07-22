@@ -115,34 +115,43 @@ export default function DashboardPage() {
         </div>
 
         {(() => {
+          // source_type didn't exist before papers could land in courses — every
+          // pre-existing row predates the column, so null/undefined means "book".
+          const books = courses.filter((c) => c.source_type !== "paper");
+          const paperCourses = courses.filter((c) => c.source_type === "paper");
           const standaloneJobs = jobs.filter((job) => !job.course_id);
-          const isEmpty = standaloneJobs.length === 0 && courses.length === 0;
+          const hasPapers = paperCourses.length > 0 || standaloneJobs.length > 0;
+          const isEmpty = books.length === 0 && !hasPapers;
           return isEmpty ? (
             <div className="mt-10">
               <EmptyState onGenerate={() => setShowForm(true)} />
             </div>
           ) : (
             <>
-              {courses.length > 0 && (
+              {books.length > 0 && (
                 <div className="mt-10">
                   <h2 className="text-lg font-semibold text-foreground">
-                    Courses
+                    Books
                   </h2>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Long PDFs with a table of contents, split into a full video course.
+                  </p>
                   <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {courses.map((course) => (
+                    {books.map((course) => (
                       <CourseCard key={course.id} course={course} />
                     ))}
                   </div>
                 </div>
               )}
-              {standaloneJobs.length > 0 && (
+              {hasPapers && (
                 <div className="mt-10">
-                  {courses.length > 0 && (
-                    <h2 className="text-lg font-semibold text-foreground">
-                      Papers
-                    </h2>
-                  )}
+                  <h2 className="text-lg font-semibold text-foreground">
+                    Papers
+                  </h2>
                   <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {paperCourses.map((course) => (
+                      <CourseCard key={course.id} course={course} />
+                    ))}
                     {standaloneJobs.map((job) => (
                       <VideoCard key={job.id} job={job} />
                     ))}

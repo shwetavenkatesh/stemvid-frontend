@@ -74,3 +74,59 @@ describe("CourseCard", () => {
     expect(screen.getByText("Untitled course")).toBeInTheDocument();
   });
 });
+
+const basePaper: Course = {
+  ...baseCourse,
+  title: "Dremel: Interactive Analysis of Web-Scale Datasets",
+  source_type: "paper",
+  course_structure: {
+    paper_title: "Dremel: Interactive Analysis of Web-Scale Datasets",
+    total_concepts: 4,
+    total_parts: 2,
+    parts: [],
+  },
+  total_videos: 2,
+  completed_videos: 1,
+};
+
+describe("CourseCard — papers", () => {
+  it("shows progress as completed/total parts, not videos", () => {
+    render(<CourseCard course={basePaper} />);
+    expect(screen.getByText("1/2 parts")).toBeInTheDocument();
+  });
+
+  it("shows 'Planning paper...' before the structure exists", () => {
+    render(
+      <CourseCard
+        course={{
+          ...basePaper,
+          status: "building_structure",
+          course_structure: null,
+          total_videos: null,
+          completed_videos: null,
+        }}
+      />
+    );
+    expect(screen.getByText("Planning paper...")).toBeInTheDocument();
+  });
+
+  it("shows 'Planning paper' as the status badge while building structure", () => {
+    render(<CourseCard course={{ ...basePaper, status: "building_structure" }} />);
+    expect(screen.getByText("Planning paper")).toBeInTheDocument();
+  });
+
+  it("does not use book wording for a paper", () => {
+    render(
+      <CourseCard
+        course={{
+          ...basePaper,
+          status: "building_structure",
+          course_structure: null,
+          total_videos: null,
+          completed_videos: null,
+        }}
+      />
+    );
+    expect(screen.queryByText("Planning course...")).not.toBeInTheDocument();
+  });
+});

@@ -8,16 +8,21 @@ import Navbar from "@/components/shared/Navbar";
 import Button from "@/components/shared/Button";
 import { jobStatusColors, jobStatusLabels } from "@/components/dashboard/VideoCard";
 import { getCourseProgress, type PendingTrigger } from "@/lib/courseProgress";
-import type { Course, Job } from "@/types";
+import type { Course, Job, BookCourseStructure, PaperCourseStructure } from "@/types";
 
-const courseStatusLabels: Record<string, string> = {
-  queued: "Queued",
-  building_structure: "Planning course...",
-  structure_ready: "In progress",
-  quota_exceeded: "Quota reached",
-  complete: "Course complete",
-  failed: "Failed",
-};
+function courseStatusLabel(status: string, isPaper: boolean): string {
+  if (status === "building_structure")
+    return isPaper ? "Planning your paper..." : "Planning course...";
+  if (status === "complete") return isPaper ? "Paper complete" : "Course complete";
+  return (
+    {
+      queued: "Queued",
+      structure_ready: "In progress",
+      quota_exceeded: "Quota reached",
+      failed: "Failed",
+    }[status] ?? status
+  );
+}
 
 export default function CoursePage() {
   const supabase = createClient();
@@ -128,11 +133,17 @@ export default function CoursePage() {
     );
   }
 
-  const videos = course.course_structure?.videos ?? [];
-  // course_structure.videos is ordered but its "index" field is author-assigned metadata,
+  const isPaper = course.source_type === "paper";
+  const videos = course.course_structure
+    ? isPaper
+      ? (course.course_structure as PaperCourseStructure).parts
+      : (course.course_structure as BookCourseStructure).videos
+    : [];
+  // course_structure's array is ordered but its "index" field is author-assigned metadata,
   // not the wire index — position in this array is what jobs.video_index actually matches.
   const { jobByPosition, readyCount, nextPosition, canGenerateNext, isRetry, firstVideoStarting } =
     getCourseProgress(videos, courseJobs, course.status, pendingTrigger);
+  const unitLabel = isPaper ? "part" : "video";
 
   async function handleGenerateNext() {
     if (!course) return;
@@ -143,7 +154,7 @@ export default function CoursePage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        type: "course_next",
+        type: isPaper ? "paper_next" : "course_next",
         course_id: course.id,
         video_index: nextPosition,
       }),
@@ -151,8 +162,8 @@ export default function CoursePage() {
     if (!resp.ok) {
       setTriggerError(
         isRetry
-          ? "Failed to retry this video. Try again."
-          : "Failed to start the next video. Try again."
+          ? `Failed to retry this ${unitLabel}. Try again.`
+          : `Failed to start the next ${unitLabel}. Try again.`
       );
     } else {
       setPendingTrigger({ position: nextPosition, priorJobId });
@@ -173,20 +184,21 @@ export default function CoursePage() {
           {course.title || "Untitled course"}
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          {courseStatusLabels[course.status] ?? course.status}
-          {videos.length > 0 && ` · ${readyCount}/${videos.length} videos ready`}
+          {courseStatusLabel(course.status, isPaper)}
+          {videos.length > 0 && ` · ${readyCount}/${videos.length} ${unitLabel}s ready`}
         </p>
 
         {course.status === "building_structure" && (
           <p className="mt-4 text-sm text-gray-500">
-            We&apos;re reading your book and planning the course. This can take
-            a few minutes — this page updates automatically.
+            {isPaper
+              ? "We're reading your paper and planning its parts. This can take a few minutes — this page updates automatically."
+              : "We're reading your book and planning the course. This can take a few minutes — this page updates automatically."}
           </p>
         )}
 
         {course.status === "structure_ready" && firstVideoStarting && (
           <p className="mt-4 text-sm text-gray-500">
-            Starting your first video — this page updates automatically.
+            Starting your first {unitLabel} — this page updates automatically.
           </p>
         )}
 
@@ -204,8 +216,8 @@ export default function CoursePage() {
               {triggering
                 ? "Starting..."
                 : isRetry
-                  ? `Retry video ${nextPosition + 1}`
-                  : `Generate video ${nextPosition + 1}`}
+                  ? `Retry ${unitLabel} ${nextPosition + 1}`
+                  : `Generate ${unitLabel} ${nextPosition + 1}`}
             </Button>
             {triggerError && (
               <p className="mt-2 text-center text-sm text-red-600">
@@ -230,7 +242,7 @@ export default function CoursePage() {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <p className="text-xs text-gray-500">
-                        Video {videoNumber}
+                        {isPaper ? "Part" : "Video"} {videoNumber}
                       </p>
                       <p className="truncate font-medium text-foreground">
                         {video.title}
