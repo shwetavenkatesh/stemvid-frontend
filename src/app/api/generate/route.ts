@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
     type === "book" ||
     type === "course_next" ||
     type === "paper_course" ||
-    type === "paper_next"
+    type === "paper_next" ||
+    type === "recheck_quota"
   ) {
     if (!course_id) {
       return NextResponse.json(

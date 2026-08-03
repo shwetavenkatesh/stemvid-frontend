@@ -73,6 +73,27 @@ export default function CoursePage() {
       if (data) {
         setCourse(data);
         await loadJobs(data.id);
+
+        // A course parked in quota_exceeded stays there forever otherwise — nothing
+        // re-checks it once the user's quota frees up next month. Ask on every page
+        // load; it's a cheap read (and a maybe-write only when there's now headroom),
+        // so it's a no-op the rest of the time. Best-effort: a failure here just means
+        // the user sees the same "quota reached" state they already had.
+        if (data.status === "quota_exceeded") {
+          try {
+            const resp = await fetch("/api/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ type: "recheck_quota", course_id: data.id }),
+            });
+            const result = await resp.json();
+            if (resp.ok && result.status && result.status !== data.status) {
+              setCourse((prev) => (prev ? { ...prev, status: result.status } : prev));
+            }
+          } catch (err) {
+            console.error("[course] quota recheck failed:", err);
+          }
+        }
       }
       setLoading(false);
     }

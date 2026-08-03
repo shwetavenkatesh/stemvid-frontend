@@ -69,10 +69,11 @@ describe("GenerateForm", () => {
     ).toBeInTheDocument();
   });
 
-  // Regression coverage: papers used to insert into `jobs` and trigger {type: "paper"}
-  // — the legacy single-shot flow — which skipped the concept-inventory/part-split
-  // structure step entirely. Both content types must now go through `courses`.
-  it("submits a paper into the courses table and triggers paper_course", async () => {
+  // 2026-08-03: papers default to a single explainer video (jobs + {type: "paper"})
+  // instead of the exhaustive multi-part Deep Dive pipeline (courses + paper_course)
+  // — most viewers want the paper's core ideas, not a per-part walkthrough. Deep
+  // Dive still exists on the backend, just not reachable from this form for now.
+  it("submits a paper into the jobs table and triggers paper", async () => {
     render(<GenerateForm userId="u1" tier="free" onCreated={jest.fn()} />);
     selectPdf();
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Dremel" } });
@@ -80,13 +81,28 @@ describe("GenerateForm", () => {
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 
-    expect(mockFrom).toHaveBeenCalledWith("courses");
-    expect(mockFrom).not.toHaveBeenCalledWith("jobs");
+    expect(mockFrom).toHaveBeenCalledWith("jobs");
+    expect(mockFrom).not.toHaveBeenCalledWith("courses");
     const [, options] = mockFetch.mock.calls[0];
     expect(JSON.parse(options.body)).toEqual({
-      type: "paper_course",
-      course_id: "new-id",
+      type: "paper",
+      job_id: "new-id",
     });
+  });
+
+  it("shows the explainer copy for papers, not the multi-part copy", () => {
+    render(<GenerateForm userId="u1" tier="free" onCreated={jest.fn()} />);
+    expect(screen.getByText(/single explainer video/i)).toBeInTheDocument();
+    expect(screen.queryByText(/one at a time from the paper page/i)).not.toBeInTheDocument();
+  });
+
+  it("shows Deep dive as a disabled, non-selectable option", () => {
+    render(<GenerateForm userId="u1" tier="free" onCreated={jest.fn()} />);
+    const deepDive = screen.getByRole("button", { name: /Deep dive/i });
+    expect(deepDive).toBeDisabled();
+    fireEvent.click(deepDive);
+    // Still on Research paper mode — clicking the disabled pill did nothing.
+    expect(screen.getByText("Generate paper")).toBeInTheDocument();
   });
 
   it("submits a book into the courses table and triggers book", async () => {
