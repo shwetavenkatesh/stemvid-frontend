@@ -45,23 +45,46 @@ export default function GenerateForm({
       return;
     }
 
-    const table = contentType === "book" ? "courses" : "jobs";
-    const { data: recordData, error: insertError } = await supabase
-      .from(table)
-      .insert({
-        user_id: userId,
-        title: trimmedTitle,
-        pdf_url: filePath,
-        status: "queued",
-      })
-      .select("id")
-      .single();
+    // Books still go through courses (the concept-inventory + part-split pipeline
+    // needs a courses row). Papers default to a single explainer video — a plain
+    // jobs row, same as the pre-multi-part pipeline — since most viewers want the
+    // paper's core ideas, not an exhaustive per-part walkthrough. The multi-part
+    // "Deep Dive" pipeline this used to go through (courses + paper_course) is
+    // unchanged and still exists, just not exposed in this form for now — see the
+    // disabled Deep Dive pill below.
+    const { data: recordData, error: insertError } =
+      contentType === "book"
+        ? await supabase
+            .from("courses")
+            .insert({
+              user_id: userId,
+              title: trimmedTitle,
+              pdf_url: filePath,
+              status: "queued",
+              // Set immediately rather than waiting on the backend's structure step to
+              // set it — otherwise a brand-new row shows as the wrong copy for however
+              // long building_structure takes, since the frontend already knows which
+              // one this is.
+              source_type: contentType,
+            })
+            .select("id")
+            .single()
+        : await supabase
+            .from("jobs")
+            .insert({
+              user_id: userId,
+              title: trimmedTitle,
+              pdf_url: filePath,
+              status: "queued",
+            })
+            .select("id")
+            .single();
 
     if (insertError || !recordData) {
       setError(
         contentType === "book"
           ? "Failed to create course. Try again."
-          : "Failed to create job. Try again."
+          : "Failed to create paper. Try again."
       );
       setSubmitting(false);
       return;
@@ -82,7 +105,7 @@ export default function GenerateForm({
       setError(
         contentType === "book"
           ? "Course created but failed to start pipeline. Try again."
-          : "Job created but failed to start pipeline. Try again."
+          : "Paper created but failed to start pipeline. Try again."
       );
       setSubmitting(false);
       return;
@@ -129,6 +152,17 @@ export default function GenerateForm({
             {option === "paper" ? "Research paper" : "Book"}
           </button>
         ))}
+        <button
+          type="button"
+          disabled
+          title="Full per-part deep dive coverage — coming soon"
+          className="flex-1 cursor-not-allowed rounded px-3 py-1.5 text-sm font-medium text-gray-300"
+        >
+          Deep dive
+          <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+            Soon
+          </span>
+        </button>
       </div>
 
       <div
@@ -159,8 +193,8 @@ export default function GenerateForm({
             </p>
             <p className="mt-1 text-xs text-gray-500">
               {contentType === "book"
-                ? "PDF textbooks and workbooks"
-                : "PDF research papers"}
+                ? "Long PDFs with a table of contents — textbooks and workbooks"
+                : "Anything that isn't a book — research papers or any other PDF"}
             </p>
           </>
         )}
@@ -186,7 +220,7 @@ export default function GenerateForm({
       <p className="text-xs text-gray-500">
         {contentType === "book"
           ? "We'll build a full video course from your book and generate the first video in 10-15 minutes. You'll generate the rest one at a time from the course page."
-          : "Currently generating videos in 10-15 minutes. Priority processing coming soon for early access members."}
+          : "We'll generate a single explainer video (about 6-9 minutes) covering the paper's core ideas — ready in 10-15 minutes."}
       </p>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -196,7 +230,7 @@ export default function GenerateForm({
           ? "Uploading..."
           : contentType === "book"
             ? "Generate course"
-            : "Generate video"}
+            : "Generate paper"}
       </Button>
     </form>
   );

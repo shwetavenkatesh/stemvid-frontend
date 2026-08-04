@@ -12,7 +12,7 @@ const points = [
   {
     title: "No hallucinations. No misrepresented research.",
     description:
-      "We don't guess, invent or embellish. If it's not in your paper, it's not in the video. Your credibility stays intact.",
+      "We don't guess, invent or embellish. A dedicated QA agent acts as an independent judge on every script — checking it against your source material and flagging anything unsupported before a single frame renders. If it's not in your paper, it's not in the video. Your credibility stays intact.",
   },
 ];
 

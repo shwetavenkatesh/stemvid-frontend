@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Course } from "@/types";
+import type { Course, BookCourseStructure, PaperCourseStructure } from "@/types";
 
 const statusColors: Record<string, string> = {
   queued: "bg-gray-200 text-gray-700",
@@ -10,17 +10,27 @@ const statusColors: Record<string, string> = {
   failed: "bg-red-100 text-red-800",
 };
 
-const statusLabels: Record<string, string> = {
-  queued: "Queued",
-  building_structure: "Planning course",
-  structure_ready: "In progress",
-  quota_exceeded: "Quota reached",
-  complete: "Complete",
-  failed: "Failed",
-};
+function statusLabel(status: string, isPaper: boolean): string {
+  if (status === "building_structure") return isPaper ? "Planning paper" : "Planning course";
+  return (
+    {
+      queued: "Queued",
+      structure_ready: "In progress",
+      quota_exceeded: "Quota reached",
+      complete: "Complete",
+      failed: "Failed",
+    }[status] ?? status
+  );
+}
 
 export default function CourseCard({ course }: { course: Course }) {
-  const total = course.total_videos ?? course.course_structure?.total_videos;
+  const isPaper = course.source_type === "paper";
+  const structureTotal = course.course_structure
+    ? isPaper
+      ? (course.course_structure as PaperCourseStructure).total_parts
+      : (course.course_structure as BookCourseStructure).total_videos
+    : undefined;
+  const total = course.total_videos ?? structureTotal;
   const completed = course.completed_videos ?? 0;
 
   return (
@@ -30,7 +40,11 @@ export default function CourseCard({ course }: { course: Course }) {
     >
       <div className="flex aspect-video items-center justify-center bg-gray-100 rounded-t-lg">
         <span className="text-sm text-gray-500">
-          {total ? `${completed}/${total} videos` : "Planning course..."}
+          {total
+            ? `${completed}/${total} ${isPaper ? "parts" : "videos"}`
+            : isPaper
+              ? "Planning paper..."
+              : "Planning course..."}
         </span>
       </div>
       <div className="p-4">
@@ -41,7 +55,7 @@ export default function CourseCard({ course }: { course: Course }) {
           <span
             className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[course.status] ?? statusColors.queued}`}
           >
-            {statusLabels[course.status] ?? course.status}
+            {statusLabel(course.status, isPaper)}
           </span>
           <span className="text-xs text-gray-500">
             {new Date(course.created_at).toLocaleDateString()}

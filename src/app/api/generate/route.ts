@@ -35,7 +35,13 @@ export async function POST(req: NextRequest) {
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
-  } else if (type === "book" || type === "course_next") {
+  } else if (
+    type === "book" ||
+    type === "course_next" ||
+    type === "paper_course" ||
+    type === "paper_next" ||
+    type === "recheck_quota"
+  ) {
     if (!course_id) {
       return NextResponse.json(
         { error: "course_id required" },

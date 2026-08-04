@@ -8,16 +8,21 @@ import Navbar from "@/components/shared/Navbar";
 import Button from "@/components/shared/Button";
 import { jobStatusColors, jobStatusLabels } from "@/components/dashboard/VideoCard";
 import { getCourseProgress, type PendingTrigger } from "@/lib/courseProgress";
-import type { Course, Job } from "@/types";
+import type { Course, Job, BookCourseStructure, PaperCourseStructure } from "@/types";
 
-const courseStatusLabels: Record<string, string> = {
-  queued: "Queued",
-  building_structure: "Planning course...",
-  structure_ready: "In progress",
-  quota_exceeded: "Quota reached",
-  complete: "Course complete",
-  failed: "Failed",
-};
+function courseStatusLabel(status: string, isPaper: boolean): string {
+  if (status === "building_structure")
+    return isPaper ? "Planning your paper..." : "Planning course...";
+  if (status === "complete") return isPaper ? "Paper complete" : "Course complete";
+  return (
+    {
+      queued: "Queued",
+      structure_ready: "In progress",
+      quota_exceeded: "Quota reached",
+      failed: "Failed",
+    }[status] ?? status
+  );
+}
 
 export default function CoursePage() {
   const supabase = createClient();
@@ -68,6 +73,27 @@ export default function CoursePage() {
       if (data) {
         setCourse(data);
         await loadJobs(data.id);
+
+        // A course parked in quota_exceeded stays there forever otherwise — nothing
+        // re-checks it once the user's quota frees up next month. Ask on every page
+        // load; it's a cheap read (and a maybe-write only when there's now headroom),
+        // so it's a no-op the rest of the time. Best-effort: a failure here just means
+        // the user sees the same "quota reached" state they already had.
+        if (data.status === "quota_exceeded") {
+          try {
+            const resp = await fetch("/api/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ type: "recheck_quota", course_id: data.id }),
+            });
+            const result = await resp.json();
+            if (resp.ok && result.status && result.status !== data.status) {
+              setCourse((prev) => (prev ? { ...prev, status: result.status } : prev));
+            }
+          } catch (err) {
+            console.error("[course] quota recheck failed:", err);
+          }
+        }
       }
       setLoading(false);
     }
@@ -128,11 +154,17 @@ export default function CoursePage() {
     );
   }
 
-  const videos = course.course_structure?.videos ?? [];
-  // course_structure.videos is ordered but its "index" field is author-assigned metadata,
+  const isPaper = course.source_type === "paper";
+  const videos = course.course_structure
+    ? isPaper
+      ? (course.course_structure as PaperCourseStructure).parts
+      : (course.course_structure as BookCourseStructure).videos
+    : [];
+  // course_structure's array is ordered but its "index" field is author-assigned metadata,
   // not the wire index — position in this array is what jobs.video_index actually matches.
   const { jobByPosition, readyCount, nextPosition, canGenerateNext, isRetry, firstVideoStarting } =
     getCourseProgress(videos, courseJobs, course.status, pendingTrigger);
+  const unitLabel = isPaper ? "part" : "video";
 
   async function handleGenerateNext() {
     if (!course) return;
@@ -143,7 +175,7 @@ export default function CoursePage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        type: "course_next",
+        type: isPaper ? "paper_next" : "course_next",
         course_id: course.id,
         video_index: nextPosition,
       }),
@@ -151,8 +183,8 @@ export default function CoursePage() {
     if (!resp.ok) {
       setTriggerError(
         isRetry
-          ? "Failed to retry this video. Try again."
-          : "Failed to start the next video. Try again."
+          ? `Failed to retry this ${unitLabel}. Try again.`
+          : `Failed to start the next ${unitLabel}. Try again.`
       );
     } else {
       setPendingTrigger({ position: nextPosition, priorJobId });
@@ -173,20 +205,21 @@ export default function CoursePage() {
           {course.title || "Untitled course"}
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          {courseStatusLabels[course.status] ?? course.status}
-          {videos.length > 0 && ` · ${readyCount}/${videos.length} videos ready`}
+          {courseStatusLabel(course.status, isPaper)}
+          {videos.length > 0 && ` · ${readyCount}/${videos.length} ${unitLabel}s ready`}
         </p>
 
         {course.status === "building_structure" && (
           <p className="mt-4 text-sm text-gray-500">
-            We&apos;re reading your book and planning the course. This can take
-            a few minutes — this page updates automatically.
+            {isPaper
+              ? "We're reading your paper and planning its parts. This can take a few minutes — this page updates automatically."
+              : "We're reading your book and planning the course. This can take a few minutes — this page updates automatically."}
           </p>
         )}
 
         {course.status === "structure_ready" && firstVideoStarting && (
           <p className="mt-4 text-sm text-gray-500">
-            Starting your first video — this page updates automatically.
+            Starting your first {unitLabel} — this page updates automatically.
           </p>
         )}
 
@@ -204,8 +237,8 @@ export default function CoursePage() {
               {triggering
                 ? "Starting..."
                 : isRetry
-                  ? `Retry video ${nextPosition + 1}`
-                  : `Generate video ${nextPosition + 1}`}
+                  ? `Retry ${unitLabel} ${nextPosition + 1}`
+                  : `Generate ${unitLabel} ${nextPosition + 1}`}
             </Button>
             {triggerError && (
               <p className="mt-2 text-center text-sm text-red-600">
@@ -224,33 +257,35 @@ export default function CoursePage() {
                 <div
                   key={position}
                   className={`rounded-lg border border-gray-200 p-4 ${
-                    job?.status === "ready" ? "hover:shadow-md" : ""
+                    job ? "hover:shadow-md" : ""
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <p className="text-xs text-gray-500">
-                        Video {videoNumber}
+                        {isPaper ? "Part" : "Video"} {videoNumber}
                       </p>
                       <p className="truncate font-medium text-foreground">
                         {video.title}
                       </p>
                     </div>
                     {job ? (
-                      job.status === "ready" ? (
-                        <Link
-                          href={`/job/${job.id}`}
-                          className="ml-4 shrink-0 text-sm font-medium text-teal hover:underline"
-                        >
-                          View
-                        </Link>
-                      ) : (
-                        <span
-                          className={`ml-4 shrink-0 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${jobStatusColors[job.status] ?? jobStatusColors.queued}`}
-                        >
-                          {jobStatusLabels[job.status] ?? job.status}
-                        </span>
-                      )
+                      // /job/[id] already shows the live step-by-step status (and the
+                      // feedback form once ready) for any job regardless of status —
+                      // no need to wait for "ready" before this becomes clickable.
+                      <Link href={`/job/${job.id}`} className="ml-4 shrink-0">
+                        {job.status === "ready" ? (
+                          <span className="text-sm font-medium text-teal hover:underline">
+                            View
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${jobStatusColors[job.status] ?? jobStatusColors.queued}`}
+                          >
+                            {jobStatusLabels[job.status] ?? job.status}
+                          </span>
+                        )}
+                      </Link>
                     ) : (
                       <span className="ml-4 shrink-0 text-xs text-gray-400">
                         Not started

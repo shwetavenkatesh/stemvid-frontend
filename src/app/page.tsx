@@ -5,7 +5,6 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import WhyItsAccurate from "@/components/landing/WhyItsAccurate";
 import WhoItsFor from "@/components/landing/WhoItsFor";
 import ContactForm from "@/components/landing/ContactForm";
-import EarlyAccess from "@/components/landing/EarlyAccess";
 import Footer from "@/components/landing/Footer";
 
 export default function LandingPage() {
@@ -19,7 +18,6 @@ export default function LandingPage() {
         <WhyItsAccurate />
         <WhoItsFor />
         <ContactForm />
-        <EarlyAccess />
       </main>
       <Footer />
     </>
