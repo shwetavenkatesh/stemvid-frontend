@@ -1,7 +1,5 @@
 "use client";
 
-import Button from "@/components/shared/Button";
-
 export default function Hero() {
   return (
     <section className="px-6 py-20 md:py-28">
@@ -13,12 +11,6 @@ export default function Hero() {
           AI-generated, scientifically accurate, ready in minutes. Built for
           STEM researchers, educators and students.
         </p>
-
-        <div className="mt-10">
-          <a href="#early-access">
-            <Button>Get early access</Button>
-          </a>
-        </div>
 
         <div className="mt-10 flex flex-col items-center gap-3 text-sm text-gray-500 sm:flex-row sm:justify-center sm:gap-6">
           <span>
