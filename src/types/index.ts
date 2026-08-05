@@ -17,6 +17,7 @@ export interface Profile {
   tier: Tier;
   videos_used_this_month: number;
   created_at: string;
+  accepted_tos_at: string | null;
 }
 
 export interface RegenLog {
