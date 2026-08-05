@@ -5,19 +5,14 @@ const personas = [
       "Share your work visually without spending weeks on production.",
   },
   {
-    title: "Educators",
+    title: "Educators & Content Creators",
     description:
-      "Create precise animated content for any STEM topic.",
+      "Create polished video content on any technical topic, no animation skills needed.",
   },
   {
     title: "Students",
     description:
       "Understand complex papers through clear visual explanation.",
-  },
-  {
-    title: "Tech Content Creators",
-    description:
-      "Turn technical topics into polished videos without touching an animation tool.",
   },
   {
     title: "Engineers",
@@ -34,7 +29,7 @@ export default function WhoItsFor() {
           Who it&apos;s for
         </h2>
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-3">
+        <div className="mt-12 grid gap-8 sm:grid-cols-2">
           {personas.map((p) => (
             <div
               key={p.title}
