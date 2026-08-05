@@ -14,6 +14,16 @@ const personas = [
     description:
       "Understand complex papers through clear visual explanation.",
   },
+  {
+    title: "Tech Content Creators",
+    description:
+      "Turn technical topics into polished videos without touching an animation tool.",
+  },
+  {
+    title: "Engineers",
+    description:
+      "Explain complex systems and concepts to teams and stakeholders in minutes.",
+  },
 ];
 
 export default function WhoItsFor() {
