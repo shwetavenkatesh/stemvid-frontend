@@ -4,6 +4,7 @@ import DemoVideos from "@/components/landing/DemoVideos";
 import HowItWorks from "@/components/landing/HowItWorks";
 import WhyItsAccurate from "@/components/landing/WhyItsAccurate";
 import WhoItsFor from "@/components/landing/WhoItsFor";
+import ProComingSoon from "@/components/landing/ProComingSoon";
 import ContactForm from "@/components/landing/ContactForm";
 import Footer from "@/components/landing/Footer";
 
@@ -17,6 +18,7 @@ export default function LandingPage() {
         <HowItWorks />
         <WhyItsAccurate />
         <WhoItsFor />
+        <ProComingSoon />
         <ContactForm />
       </main>
       <Footer />
