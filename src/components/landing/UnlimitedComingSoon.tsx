@@ -18,17 +18,6 @@ export default function UnlimitedComingSoon() {
         >
           Sign up for early access &rarr;
         </a>
-
-        <p className="mt-8 text-sm text-gray-500">
-          Need more scale or support?{" "}
-          <a
-            href="#contact"
-            className="font-medium text-teal hover:text-teal-dark"
-          >
-            Reach out about enterprise
-          </a>
-          .
-        </p>
       </div>
     </section>
   );
