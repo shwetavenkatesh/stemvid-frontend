@@ -19,6 +19,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("accepted_tos_at")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.accepted_tos_at) {
+    return NextResponse.json(
+      { error: "You must accept the Terms of Service before generating videos" },
+      { status: 403 }
+    );
+  }
+
   const body = await req.json();
   const { type, job_id, course_id, video_index } = body;
 

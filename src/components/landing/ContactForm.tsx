@@ -103,6 +103,8 @@ export default function ContactForm() {
             >
               <option value="general">General enquiry</option>
               <option value="more_videos">I need more videos</option>
+              <option value="pro_early_access">Pro early access</option>
+              <option value="enterprise">Enterprise</option>
               <option value="bug">Report an issue</option>
               <option value="other">Other</option>
             </select>

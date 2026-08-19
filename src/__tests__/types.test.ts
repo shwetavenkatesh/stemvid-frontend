@@ -44,6 +44,7 @@ describe("types", () => {
       tier: "free",
       videos_used_this_month: 0,
       created_at: "2026-01-01",
+      accepted_tos_at: null,
     };
     expect(profile.tier).toBe("free");
   });

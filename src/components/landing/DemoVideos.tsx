@@ -79,6 +79,17 @@ export default function DemoVideos() {
             );
           })}
         </div>
+
+        <div className="mt-10 text-center">
+          <a
+            href="https://www.youtube.com/channel/UC98o_DYaxmePKq6W2gA0WQQ"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-teal hover:underline"
+          >
+            Watch more on our YouTube channel &rarr;
+          </a>
+        </div>
       </div>
     </section>
   );

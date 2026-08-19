@@ -9,7 +9,7 @@ export default function Hero() {
         </h1>
         <p className="mt-6 text-lg text-gray-500 md:text-xl">
           AI-generated, scientifically accurate, ready in minutes. Built for
-          STEM researchers, educators and students.
+          STEM researchers, engineers and tech creators.
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-3 text-sm text-gray-500 sm:flex-row sm:justify-center sm:gap-6">

@@ -9,6 +9,7 @@ import VideoCard from "@/components/dashboard/VideoCard";
 import CourseCard from "@/components/dashboard/CourseCard";
 import GenerateForm from "@/components/dashboard/GenerateForm";
 import EmptyState from "@/components/dashboard/EmptyState";
+import TosGate from "@/components/dashboard/TosGate";
 import Button from "@/components/shared/Button";
 import Link from "next/link";
 import type { Job, Course, Profile } from "@/types";
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [acceptingTos, setAcceptingTos] = useState(false);
 
   const loadJobs = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -80,8 +82,34 @@ export default function DashboardPage() {
   const used = profile?.videos_used_this_month ?? 0;
   const remaining = Math.max(0, limit - used);
 
+  async function handleAgreeTos() {
+    if (!user) return;
+    setAcceptingTos(true);
+    const acceptedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ accepted_tos_at: acceptedAt })
+      .eq("id", user.id);
+    setAcceptingTos(false);
+    if (!error) {
+      setProfile((p) => (p ? { ...p, accepted_tos_at: acceptedAt } : p));
+    }
+  }
+
+  async function handleLogoutFromGate() {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
   return (
     <>
+      {profile && !profile.accepted_tos_at && (
+        <TosGate
+          onAgree={handleAgreeTos}
+          onLogout={handleLogoutFromGate}
+          loading={acceptingTos}
+        />
+      )}
       <Navbar user={user} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
