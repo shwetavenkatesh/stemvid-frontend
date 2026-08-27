@@ -14,6 +14,11 @@ const points = [
     description:
       "We don't guess, invent or embellish. A dedicated QA agent acts as an independent judge on every script — checking it against your source material and flagging anything unsupported before a single frame renders. If it's not in your paper, it's not in the video. Your credibility stays intact.",
   },
+  {
+    title: "You have the final say",
+    description:
+      "Every scene is yours to review before it's final. If something's off, tell it what to fix and regenerate that scene — nothing ships without your approval.",
+  },
 ];
 
 export default function WhyItsAccurate() {

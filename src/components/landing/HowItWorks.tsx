@@ -13,9 +13,9 @@ const steps = [
   },
   {
     number: "3",
-    title: "Receive your video in 10-15 minutes",
+    title: "Review your video, scene by scene",
     description:
-      "Download your precise, code-rendered animated explainer — ready to share.",
+      "Every scene renders separately. Watch each one and regenerate any that aren't right — finalize when it's ready.",
   },
 ];
 

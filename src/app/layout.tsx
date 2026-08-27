@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "stemvid.ai — Turn research papers into animated explainer videos",
+  title: "stemvid.ai — the video studio for technical ideas",
   description:
-    "Manim-powered, AI-generated, scientifically accurate. Built for STEM researchers, engineers and tech creators.",
+    "Turn research papers and textbooks into a first draft in minutes, then refine every scene until it's ready.",
 };
 
 export default function RootLayout({
