@@ -21,8 +21,6 @@ export default function Hero() {
             <span className="font-medium text-foreground">Manim</span>
           </span>
           <span className="hidden sm:inline text-gray-300">|</span>
-          <span>Scripts verified against source material</span>
-          <span className="hidden sm:inline text-gray-300">|</span>
           <span>No hallucinations. No misrepresented research.</span>
           <span className="hidden sm:inline text-gray-300">|</span>
           <span>You review and approve every scene</span>

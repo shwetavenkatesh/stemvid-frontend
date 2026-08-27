@@ -25,11 +25,14 @@ export default function WhyItsAccurate() {
   return (
     <section className="px-6 py-20">
       <div className="mx-auto max-w-4xl">
-        <h2 className="text-center text-2xl font-bold text-foreground md:text-3xl">
-          Why it&apos;s accurate
+        <p className="text-center text-sm font-semibold uppercase tracking-wide text-teal">
+          Accuracy &amp; control
+        </p>
+        <h2 className="mt-3 text-center text-2xl font-bold text-foreground md:text-3xl">
+          Why you can trust it
         </h2>
         <p className="mt-3 text-center text-gray-500">
-          Built for people who can&apos;t afford to get it wrong
+          Accurate by design. Yours to approve.
         </p>
 
         <div className="mt-14 space-y-10">
