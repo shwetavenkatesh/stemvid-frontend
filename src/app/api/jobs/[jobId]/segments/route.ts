@@ -68,6 +68,31 @@ export async function GET(
       })
   );
 
+  // Audio finishes segment-by-segment well before video — same narration used in the
+  // final render, played back so there's something real to see/hear while waiting.
+  const audioListResp = await r2.send(
+    new ListObjectsV2Command({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Prefix: `videos/audio/${jobId}/`,
+    })
+  );
+  const audioUrlByIndex = new Map<number, string>();
+  await Promise.all(
+    (audioListResp.Contents ?? [])
+      .map((o) => o.Key!)
+      .filter((k) => k.endsWith(".mp3"))
+      .map(async (key) => {
+        const match = key.match(/seg_(\d+)\.mp3$/);
+        if (!match) return;
+        const url = await getSignedUrl(
+          r2,
+          new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME!, Key: key }),
+          { expiresIn: 3600 }
+        );
+        audioUrlByIndex.set(parseInt(match[1], 10), url);
+      })
+  );
+
   // segments.json is uploaded early (right after the audio stage) — narration text
   // and, indirectly, the full segment count become available well before every
   // segment finishes rendering. Its absence just means the job hasn't reached that
@@ -105,6 +130,7 @@ export async function GET(
         // being there, same as this endpoint's original (pre-seeding) behavior.
         video_status: row?.video_status ?? (hasVideo ? "ready" : "pending"),
         audio_status: row?.audio_status ?? (hasVideo ? "ready" : "pending"),
+        audio_url: audioUrlByIndex.get(index) ?? null,
         narration_text: narrationByIndex.get(index) ?? null,
         duration: durationByIndex.get(index) ?? null,
       };

@@ -91,14 +91,19 @@ function mockTables(
 
 function mockR2({
   segmentKeys = [],
+  audioKeys = [],
   segmentsJsonBody,
 }: {
   segmentKeys?: string[];
+  audioKeys?: string[];
   segmentsJsonBody?: string;
 }) {
   mockSend.mockImplementation((cmd: { input: { Prefix?: string; Key?: string } }) => {
-    if (cmd.input.Prefix !== undefined) {
+    if (cmd.input.Prefix?.startsWith("videos/segments/")) {
       return Promise.resolve({ Contents: segmentKeys.map((Key) => ({ Key })) });
+    }
+    if (cmd.input.Prefix?.startsWith("videos/audio/")) {
+      return Promise.resolve({ Contents: audioKeys.map((Key) => ({ Key })) });
     }
     if (cmd.input.Key?.endsWith("segments.json")) {
       if (segmentsJsonBody === undefined) return Promise.reject(new Error("NoSuchKey"));
@@ -157,6 +162,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         video_url: "https://r2.example.com/signed-url",
         video_status: "ready",
         audio_status: "ready",
+        audio_url: null,
         narration_text: null,
         duration: null,
       },
@@ -165,6 +171,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         video_url: "https://r2.example.com/signed-url",
         video_status: "regenerating",
         audio_status: "ready",
+        audio_url: null,
         narration_text: null,
         duration: null,
       },
@@ -183,7 +190,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
     const body = await res.json();
 
     expect(body.segments).toEqual([
-      { index: 0, video_url: null, video_status: "pending", audio_status: "ready", narration_text: null, duration: null },
+      { index: 0, video_url: null, video_status: "pending", audio_status: "ready", audio_url: null, narration_text: null, duration: null },
     ]);
   });
 
@@ -201,6 +208,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         video_url: "https://r2.example.com/signed-url",
         video_status: "ready",
         audio_status: "ready",
+        audio_url: null,
         narration_text: null,
         duration: null,
       },
@@ -265,5 +273,33 @@ describe("GET /api/jobs/[jobId]/segments", () => {
     const body = await res.json();
 
     expect(body.segments[0].duration).toBe(12.5);
+  });
+
+  it("includes a signed audio_url once the segment's mp3 exists", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockTables(
+      { id: "job-1", status: "creating_animations" },
+      [{ segment_index: 0, video_status: "pending", audio_status: "ready" }]
+    );
+    mockR2({ segmentKeys: [], audioKeys: ["videos/audio/job-1/seg_00.mp3"] });
+
+    const res = await GET(makeRequest(), makeParams("job-1"));
+    const body = await res.json();
+
+    expect(body.segments[0].audio_url).toBe("https://r2.example.com/signed-url");
+  });
+
+  it("leaves audio_url null when the segment's mp3 doesn't exist yet", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockTables(
+      { id: "job-1", status: "generating_audio" },
+      [{ segment_index: 0, video_status: "pending", audio_status: "pending" }]
+    );
+    mockR2({ segmentKeys: [], audioKeys: [] });
+
+    const res = await GET(makeRequest(), makeParams("job-1"));
+    const body = await res.json();
+
+    expect(body.segments[0].audio_url).toBeNull();
   });
 });

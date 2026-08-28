@@ -31,7 +31,7 @@ export default function Modal({
         if (e.target === overlayRef.current) onClose();
       }}
     >
-      <div className="relative mx-4 w-full max-w-lg rounded-lg bg-background p-6 shadow-lg">
+      <div className="relative mx-4 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background p-6 shadow-lg">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"

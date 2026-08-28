@@ -62,12 +62,29 @@ export default function JobPage() {
   const [finalizing, setFinalizing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const fetchSegments = useCallback(async () => {
     const res = await fetch(`/api/jobs/${params.id}/segments`);
     if (!res.ok) return;
     const data = await res.json();
     setSegments(data.segments);
+  }, [params.id]);
+
+  const fetchJob = useCallback(async () => {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const { data } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("id", params.id)
+      .eq("user_id", authUser.id)
+      .single();
+    if (data) setJob(data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   useEffect(() => {
@@ -139,6 +156,28 @@ export default function JobPage() {
       supabase.removeChannel(channel);
     };
   }, [params.id, fetchSegments]);
+
+  // Realtime is the fast path, but shouldn't be the only path — a dropped/unauthorized
+  // websocket subscription would otherwise leave the page frozen on stale data with no
+  // way to recover short of a manual refresh. Polls only while the job is still moving.
+  useEffect(() => {
+    if (!job || job.status === "ready" || job.status === "failed") return;
+    const interval = setInterval(() => {
+      fetchJob();
+      fetchSegments();
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [job, fetchJob, fetchSegments]);
+
+  useEffect(() => {
+    if (job?.status !== "ready" || !job.video_url) return;
+    fetch(`/api/video/${job.id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.url) setFinalVideoUrl(data.url);
+      })
+      .catch(() => {});
+  }, [job?.status, job?.video_url, job?.id]);
 
   const effectiveSelected = selected ?? segments[0]?.index ?? null;
   const active = segments.find((s) => s.index === effectiveSelected) ?? null;
@@ -326,10 +365,14 @@ export default function JobPage() {
             <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto bg-gray-100 p-6">
               <div className="flex aspect-video w-full max-w-xl items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
                 {isDone ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <PlayIcon className="h-8 w-8" />
-                    <span className="text-xs text-gray-300">Your final video is ready</span>
-                  </div>
+                  finalVideoUrl ? (
+                    <video src={finalVideoUrl} controls className="h-full w-full" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                      <Spinner className="h-6 w-6" />
+                      <span className="text-xs">Loading your video...</span>
+                    </div>
+                  )
                 ) : isFinalizing ? (
                   <div className="flex flex-col items-center gap-2 text-gray-300">
                     <Spinner className="h-6 w-6" />
@@ -355,9 +398,12 @@ export default function JobPage() {
                     </span>
                   </div>
                 ) : active?.audio_status === "ready" ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                  <div className="flex flex-col items-center gap-3 text-gray-300">
                     <Spinner className="h-6 w-6" />
                     <span className="text-xs">Animating this segment...</span>
+                    {active.audio_url && (
+                      <audio key={active.audio_url} src={active.audio_url} controls className="h-8 w-56" />
+                    )}
                   </div>
                 ) : isPreSegments ? (
                   <div className="flex flex-col items-center gap-2 text-gray-300">
@@ -403,8 +449,13 @@ export default function JobPage() {
               )}
 
               {isDone && user && (
-                <div className="mt-4 w-full max-w-xl">
-                  <FeedbackWidget jobId={job.id} userId={user.id} />
+                <div className="mt-4 w-full max-w-xl text-center">
+                  <button
+                    onClick={() => setFeedbackOpen(true)}
+                    className="text-xs font-medium text-teal hover:text-teal-dark"
+                  >
+                    Give feedback on this video
+                  </button>
                 </div>
               )}
             </div>
@@ -464,17 +515,20 @@ export default function JobPage() {
                   </span>
                   <div className="flex gap-2">
                     {segments.map((s) => (
-                      <div
+                      <button
                         key={s.index}
+                        onClick={() => setSelected(s.index)}
                         style={{ width: 96 }}
-                        className={`flex h-6 items-center justify-center rounded-md text-[10px] ${
+                        className={`flex h-6 items-center justify-center rounded-md text-[10px] transition-all ${
+                          s.index === effectiveSelected ? "ring-2 ring-teal" : ""
+                        } ${
                           s.audio_status === "ready"
                             ? "bg-teal-light text-teal-dark"
                             : "border border-dashed border-gray-200 text-gray-300"
                         }`}
                       >
                         {s.audio_status === "ready" ? "♫" : <Spinner className="h-3 w-3" />}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -497,6 +551,12 @@ export default function JobPage() {
           <Button onClick={finalizeVideo}>Finalize video</Button>
         </div>
       </Modal>
+
+      {user && (
+        <Modal open={feedbackOpen} onClose={() => setFeedbackOpen(false)}>
+          <FeedbackWidget jobId={job.id} userId={user.id} />
+        </Modal>
+      )}
     </>
   );
 }

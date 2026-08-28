@@ -19,6 +19,7 @@ export interface StudioSegment {
   video_url: string | null;
   video_status: SegmentVideoStatus;
   audio_status: SegmentAudioStatus;
+  audio_url: string | null;
   narration_text: string | null;
   duration: number | null;
 }
