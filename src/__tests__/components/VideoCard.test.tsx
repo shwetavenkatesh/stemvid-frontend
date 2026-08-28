@@ -62,4 +62,14 @@ describe("VideoCard", () => {
     render(<VideoCard job={{ ...baseJob, status: "queued" }} />);
     expect(screen.getByText("Processing...")).toBeInTheDocument();
   });
+
+  it("shows Ready to review badge and thumbnail text when reviewing", () => {
+    render(<VideoCard job={{ ...baseJob, status: "reviewing" }} />);
+    expect(screen.getAllByText("Ready to review")).toHaveLength(2);
+  });
+
+  it("shows Finalizing badge for jobs being finalized", () => {
+    render(<VideoCard job={{ ...baseJob, status: "finalizing" }} />);
+    expect(screen.getByText("Finalizing")).toBeInTheDocument();
+  });
 });

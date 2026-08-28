@@ -7,6 +7,7 @@ export type JobStatus =
   | "creating_animations"
   | "rendering"
   | "reviewing"
+  | "finalizing"
   | "ready"
   | "failed";
 
