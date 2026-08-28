@@ -6,8 +6,17 @@ export type JobStatus =
   | "generating_audio"
   | "creating_animations"
   | "rendering"
+  | "reviewing"
   | "ready"
   | "failed";
+
+export type SegmentRegenStatus = "ready" | "regenerating" | "failed";
+
+export interface StudioSegment {
+  index: number;
+  video_url: string;
+  status: SegmentRegenStatus;
+}
 
 export type Rating = "thumbs_up" | "thumbs_down";
 

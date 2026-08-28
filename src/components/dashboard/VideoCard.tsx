@@ -7,6 +7,7 @@ export const jobStatusColors: Record<string, string> = {
   generating_audio: "bg-yellow-100 text-yellow-800",
   creating_animations: "bg-yellow-100 text-yellow-800",
   rendering: "bg-blue-100 text-blue-800",
+  reviewing: "bg-teal-light text-teal-dark",
   ready: "bg-green-100 text-green-800",
   failed: "bg-red-100 text-red-800",
 };
@@ -17,6 +18,7 @@ export const jobStatusLabels: Record<string, string> = {
   generating_audio: "Generating audio",
   creating_animations: "Creating animations",
   rendering: "Rendering",
+  reviewing: "Ready to review",
   ready: "Ready",
   failed: "Failed",
 };
@@ -30,6 +32,8 @@ export default function VideoCard({ job }: { job: Job }) {
       <div className="flex aspect-video items-center justify-center bg-gray-100 rounded-t-lg">
         {job.status === "ready" ? (
           <span className="text-sm text-teal font-medium">Video ready</span>
+        ) : job.status === "reviewing" ? (
+          <span className="text-sm text-teal font-medium">Ready to review</span>
         ) : (
           <span className="text-sm text-gray-500">Processing...</span>
         )}

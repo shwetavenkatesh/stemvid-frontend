@@ -6,6 +6,7 @@ const steps: { key: JobStatus; label: string }[] = [
   { key: "generating_audio", label: "Generating audio" },
   { key: "creating_animations", label: "Creating animations" },
   { key: "rendering", label: "Rendering" },
+  { key: "reviewing", label: "Ready to review" },
   { key: "ready", label: "Ready" },
 ];
 
@@ -52,7 +53,7 @@ export default function StatusTracker({ status }: { status: JobStatus }) {
               }`}
             >
               {step.label}
-              {active && status !== "ready" && "..."}
+              {active && status !== "ready" && status !== "reviewing" && "..."}
             </span>
           </div>
         );

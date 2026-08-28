@@ -102,11 +102,19 @@ export default function JobPage() {
           <StatusTracker status={job.status} />
         </div>
 
-        {job.status !== "ready" && job.status !== "failed" && (
+        {job.status !== "ready" && job.status !== "failed" && job.status !== "reviewing" && (
           <p className="mt-4 text-center text-sm text-gray-500">
             This usually takes 10–15 minutes. This page updates automatically —
             you can also check back from your dashboard.
           </p>
+        )}
+
+        {job.status === "reviewing" && (
+          <div className="mt-8">
+            <Link href={`/job/${job.id}/studio`}>
+              <Button className="w-full">Review segments</Button>
+            </Link>
+          </div>
         )}
 
         {job.status === "ready" && job.video_url && (

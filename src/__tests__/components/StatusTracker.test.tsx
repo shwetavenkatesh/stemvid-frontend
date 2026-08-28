@@ -26,12 +26,24 @@ describe("StatusTracker", () => {
   it("shows all steps completed when ready", () => {
     render(<StatusTracker status="ready" />);
     const checks = screen.getAllByText("✓");
-    expect(checks).toHaveLength(5);
+    expect(checks).toHaveLength(6);
     expect(screen.getByText("Ready")).toBeInTheDocument();
   });
 
   it("shows queued as first active step", () => {
     render(<StatusTracker status="queued" />);
     expect(screen.getByText("Queued...")).toBeInTheDocument();
+  });
+
+  it("highlights reviewing step without a loading ellipsis", () => {
+    render(<StatusTracker status="reviewing" />);
+    expect(screen.getByText("Ready to review")).toBeInTheDocument();
+    expect(screen.queryByText("Ready to review...")).not.toBeInTheDocument();
+  });
+
+  it("marks rendering as done once reviewing", () => {
+    render(<StatusTracker status="reviewing" />);
+    const checks = screen.getAllByText("✓");
+    expect(checks).toHaveLength(5);
   });
 });

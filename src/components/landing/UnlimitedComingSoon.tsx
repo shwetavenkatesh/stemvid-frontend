@@ -9,8 +9,8 @@ export default function UnlimitedComingSoon() {
           Unlimited
         </h2>
         <p className="mt-3 text-gray-500">
-          Free, bring your own Anthropic API key. Create more videos and
-          regenerate any segment.
+          Free, bring your own Anthropic API key. Create more videos, edit your
+          own script, and add your own voice or choose from multiple voices.
         </p>
         <a
           href="#contact"
