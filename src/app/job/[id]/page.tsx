@@ -118,6 +118,10 @@ export default function JobPage() {
   const active = segments.find((s) => s.index === effectiveSelected) ?? null;
   const anyRegenerating = segments.some((s) => s.status === "regenerating");
 
+  const isPreSegments =
+    job?.status === "queued" ||
+    job?.status === "generating_script" ||
+    job?.status === "generating_audio";
   const isGenerating = job?.status === "creating_animations" || job?.status === "rendering";
   const isReviewing = job?.status === "reviewing";
   const isFinalizing = job?.status === "finalizing";
@@ -223,7 +227,7 @@ export default function JobPage() {
               {finalizing ? "Starting..." : "Finalize video"}
             </Button>
           )}
-          {isDone && (
+          {isDone && job.video_url && (
             <Button disabled={downloading} onClick={downloadVideo}>
               {downloading ? "Preparing download..." : "Download video"}
             </Button>
@@ -238,8 +242,7 @@ export default function JobPage() {
           </div>
         )}
 
-        {(isGenerating || job.status === "queued" || job.status === "generating_script" ||
-          job.status === "generating_audio") && (
+        {(isGenerating || isPreSegments) && (
           <div className="mt-6 rounded-lg border border-gray-200 bg-gray-100 p-6 text-center">
             <p className="font-medium text-foreground">
               {STAGE_LABEL[job.status] || "Working on your video..."}
