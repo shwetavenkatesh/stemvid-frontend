@@ -37,12 +37,12 @@ export async function GET(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
-  const { data: statuses } = await supabase
+  const { data: statusRows } = await supabase
     .from("segment_status")
-    .select("segment_index, status")
+    .select("segment_index, video_status, audio_status")
     .eq("job_id", jobId);
   const statusByIndex = new Map(
-    (statuses ?? []).map((s) => [s.segment_index, s.status])
+    (statusRows ?? []).map((s) => [s.segment_index, s])
   );
 
   const listResp = await r2.send(
@@ -51,27 +51,61 @@ export async function GET(
       Prefix: `videos/segments/${jobId}/`,
     })
   );
-  const keys = (listResp.Contents ?? [])
-    .map((o) => o.Key!)
-    .filter((k) => k.endsWith(".mp4"));
+  const videoUrlByIndex = new Map<number, string>();
+  await Promise.all(
+    (listResp.Contents ?? [])
+      .map((o) => o.Key!)
+      .filter((k) => k.endsWith(".mp4"))
+      .map(async (key) => {
+        const match = key.match(/seg_(\d+)\.mp4$/);
+        if (!match) return;
+        const url = await getSignedUrl(
+          r2,
+          new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME!, Key: key }),
+          { expiresIn: 3600 }
+        );
+        videoUrlByIndex.set(parseInt(match[1], 10), url);
+      })
+  );
 
-  const segments = await Promise.all(
-    keys.map(async (key) => {
-      const match = key.match(/seg_(\d+)\.mp4$/);
-      const index = match ? parseInt(match[1], 10) : -1;
-      const video_url = await getSignedUrl(
-        r2,
-        new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME!, Key: key }),
-        { expiresIn: 3600 }
-      );
+  // segments.json is uploaded early (right after the audio stage) — narration text
+  // and, indirectly, the full segment count become available well before every
+  // segment finishes rendering. Its absence just means the job hasn't reached that
+  // point yet (or is an older job from before this existed) — not an error.
+  const narrationByIndex = new Map<number, string>();
+  try {
+    const segsObj = await r2.send(
+      new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: `videos/other/${jobId}/segments.json`,
+      })
+    );
+    const body = await segsObj.Body!.transformToString();
+    const segmentsJson: { narration_text?: string }[] = JSON.parse(body);
+    segmentsJson.forEach((s, i) => {
+      if (s.narration_text) narrationByIndex.set(i, s.narration_text);
+    });
+  } catch {
+    // Not uploaded yet — fine, script dock just stays empty/loading.
+  }
+
+  const indices = new Set<number>([...statusByIndex.keys(), ...videoUrlByIndex.keys()]);
+  const segments = Array.from(indices)
+    .sort((a, b) => a - b)
+    .map((index) => {
+      const row = statusByIndex.get(index);
+      const hasVideo = videoUrlByIndex.has(index);
       return {
         index,
-        video_url,
-        status: statusByIndex.get(index) ?? "ready",
+        video_url: videoUrlByIndex.get(index) ?? null,
+        // A row not yet seeded but with a rendered mp4 is only possible for jobs
+        // created before per-segment seeding existed — infer "ready" from the mp4
+        // being there, same as this endpoint's original (pre-seeding) behavior.
+        video_status: row?.video_status ?? (hasVideo ? "ready" : "pending"),
+        audio_status: row?.audio_status ?? (hasVideo ? "ready" : "pending"),
+        narration_text: narrationByIndex.get(index) ?? null,
       };
-    })
-  );
-  segments.sort((a, b) => a.index - b.index);
+    });
 
   return NextResponse.json({ job_status: job.status, segments });
 }

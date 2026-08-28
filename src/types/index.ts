@@ -11,12 +11,15 @@ export type JobStatus =
   | "ready"
   | "failed";
 
-export type SegmentRegenStatus = "ready" | "regenerating" | "failed";
+export type SegmentVideoStatus = "pending" | "ready" | "regenerating" | "failed";
+export type SegmentAudioStatus = "pending" | "ready";
 
 export interface StudioSegment {
   index: number;
-  video_url: string;
-  status: SegmentRegenStatus;
+  video_url: string | null;
+  video_status: SegmentVideoStatus;
+  audio_status: SegmentAudioStatus;
+  narration_text: string | null;
 }
 
 export type Rating = "thumbs_up" | "thumbs_down";

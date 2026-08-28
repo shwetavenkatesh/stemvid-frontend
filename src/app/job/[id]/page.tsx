@@ -116,7 +116,7 @@ export default function JobPage() {
 
   const effectiveSelected = selected ?? segments[0]?.index ?? null;
   const active = segments.find((s) => s.index === effectiveSelected) ?? null;
-  const anyRegenerating = segments.some((s) => s.status === "regenerating");
+  const anyRegenerating = segments.some((s) => s.video_status === "regenerating");
 
   const isPreSegments =
     job?.status === "queued" ||
@@ -134,7 +134,7 @@ export default function JobPage() {
     if (!active || !instructions.trim()) return;
     setRegenError(null);
     setSegments((prev) =>
-      prev.map((s) => (s.index === active.index ? { ...s, status: "regenerating" } : s))
+      prev.map((s) => (s.index === active.index ? { ...s, video_status: "regenerating" } : s))
     );
     const res = await fetch(`/api/jobs/${params.id}/regenerate`, {
       method: "POST",
@@ -286,13 +286,15 @@ export default function JobPage() {
                 >
                   <span
                     className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
-                      s.status === "regenerating"
+                      s.video_status === "regenerating"
                         ? "animate-pulse bg-teal-light text-teal"
-                        : s.status === "failed"
+                        : s.video_status === "failed"
                           ? "bg-red-100 text-red-700"
-                          : isSelected
-                            ? "bg-teal text-white"
-                            : "bg-gray-200 text-gray-700"
+                          : s.video_status === "pending"
+                            ? "border border-dashed border-gray-300 text-gray-300"
+                            : isSelected
+                              ? "bg-teal text-white"
+                              : "bg-gray-200 text-gray-700"
                     }`}
                   >
                     {s.index + 1}
@@ -313,12 +315,12 @@ export default function JobPage() {
           <div className="mt-6 rounded-lg border border-gray-200 p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold text-foreground">Segment {active.index + 1}</h2>
-              {active.status === "regenerating" && (
+              {active.video_status === "regenerating" && (
                 <span className="rounded-full bg-teal-light px-2.5 py-0.5 text-xs font-medium text-teal">
                   Regenerating...
                 </span>
               )}
-              {active.status === "failed" && (
+              {active.video_status === "failed" && (
                 <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
                   Regeneration failed
                 </span>
@@ -326,12 +328,18 @@ export default function JobPage() {
             </div>
 
             <div className="mt-4 aspect-video overflow-hidden rounded-md bg-gray-900">
-              {active.status === "regenerating" ? (
+              {active.video_status === "regenerating" ? (
                 <div className="flex h-full items-center justify-center">
                   <p className="text-sm text-gray-300">Regenerating this segment...</p>
                 </div>
-              ) : (
+              ) : active.video_url ? (
                 <video key={active.video_url} src={active.video_url} controls className="h-full w-full" />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-gray-300">
+                    {active.audio_status === "ready" ? "Animating this segment..." : "Not ready yet..."}
+                  </p>
+                </div>
               )}
             </div>
 
@@ -345,7 +353,7 @@ export default function JobPage() {
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="e.g. make the title bigger and give it more space"
                   rows={3}
-                  disabled={active.status === "regenerating"}
+                  disabled={active.video_status === "regenerating"}
                   className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal disabled:opacity-50"
                 />
                 {regenError && <p className="mt-2 text-sm text-red-600">{regenError}</p>}
@@ -353,9 +361,9 @@ export default function JobPage() {
                   <Button
                     variant="outline"
                     onClick={regenerateSegment}
-                    disabled={active.status === "regenerating" || !instructions.trim()}
+                    disabled={active.video_status === "regenerating" || !instructions.trim()}
                   >
-                    {active.status === "regenerating" ? "Regenerating..." : "Regenerate segment"}
+                    {active.video_status === "regenerating" ? "Regenerating..." : "Regenerate segment"}
                   </Button>
                 </div>
               </div>
