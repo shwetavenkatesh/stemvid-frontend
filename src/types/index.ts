@@ -20,6 +20,7 @@ export interface StudioSegment {
   video_status: SegmentVideoStatus;
   audio_status: SegmentAudioStatus;
   narration_text: string | null;
+  duration: number | null;
 }
 
 export type Rating = "thumbs_up" | "thumbs_down";

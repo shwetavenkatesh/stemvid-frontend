@@ -73,6 +73,7 @@ export async function GET(
   // segment finishes rendering. Its absence just means the job hasn't reached that
   // point yet (or is an older job from before this existed) — not an error.
   const narrationByIndex = new Map<number, string>();
+  const durationByIndex = new Map<number, number>();
   try {
     const segsObj = await r2.send(
       new GetObjectCommand({
@@ -81,12 +82,13 @@ export async function GET(
       })
     );
     const body = await segsObj.Body!.transformToString();
-    const segmentsJson: { narration_text?: string }[] = JSON.parse(body);
+    const segmentsJson: { narration_text?: string; duration?: number }[] = JSON.parse(body);
     segmentsJson.forEach((s, i) => {
       if (s.narration_text) narrationByIndex.set(i, s.narration_text);
+      if (typeof s.duration === "number") durationByIndex.set(i, s.duration);
     });
   } catch {
-    // Not uploaded yet — fine, script dock just stays empty/loading.
+    // Not uploaded yet — fine, script dock/timeline just stay empty/loading.
   }
 
   const indices = new Set<number>([...statusByIndex.keys(), ...videoUrlByIndex.keys()]);
@@ -104,6 +106,7 @@ export async function GET(
         video_status: row?.video_status ?? (hasVideo ? "ready" : "pending"),
         audio_status: row?.audio_status ?? (hasVideo ? "ready" : "pending"),
         narration_text: narrationByIndex.get(index) ?? null,
+        duration: durationByIndex.get(index) ?? null,
       };
     });
 

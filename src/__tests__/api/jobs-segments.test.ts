@@ -158,6 +158,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         video_status: "ready",
         audio_status: "ready",
         narration_text: null,
+        duration: null,
       },
       {
         index: 1,
@@ -165,6 +166,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         video_status: "regenerating",
         audio_status: "ready",
         narration_text: null,
+        duration: null,
       },
     ]);
   });
@@ -181,7 +183,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
     const body = await res.json();
 
     expect(body.segments).toEqual([
-      { index: 0, video_url: null, video_status: "pending", audio_status: "ready", narration_text: null },
+      { index: 0, video_url: null, video_status: "pending", audio_status: "ready", narration_text: null, duration: null },
     ]);
   });
 
@@ -200,6 +202,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         video_status: "ready",
         audio_status: "ready",
         narration_text: null,
+        duration: null,
       },
     ]);
   });
@@ -245,5 +248,22 @@ describe("GET /api/jobs/[jobId]/segments", () => {
     const body = await res.json();
 
     expect(body.segments[0].narration_text).toBeNull();
+  });
+
+  it("includes duration once segments.json is available", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockTables(
+      { id: "job-1", status: "creating_animations" },
+      [{ segment_index: 0, video_status: "pending", audio_status: "ready" }]
+    );
+    mockR2({
+      segmentKeys: [],
+      segmentsJsonBody: JSON.stringify([{ narration_text: "Hi.", duration: 12.5 }]),
+    });
+
+    const res = await GET(makeRequest(), makeParams("job-1"));
+    const body = await res.json();
+
+    expect(body.segments[0].duration).toBe(12.5);
   });
 });

@@ -11,13 +11,39 @@ import Modal from "@/components/shared/Modal";
 import { trackEvent } from "@/lib/posthog";
 import type { Job, StudioSegment } from "@/types";
 
-const STAGE_LABEL: Record<string, string> = {
-  queued: "Getting your video started...",
-  generating_script: "Writing your script...",
+const OVERVIEW_LABEL: Record<string, string> = {
+  queued: "Getting started...",
+  generating_script: "Writing script...",
   generating_audio: "Recording narration...",
-  creating_animations: "Drawing your animations...",
-  rendering: "Rendering your segments...",
+  creating_animations: "Animating segments...",
+  rendering: "Rendering segments...",
+  reviewing: "Reviewing",
+  finalizing: "Combining segments...",
+  ready: "Ready",
+  failed: "Failed",
 };
+
+function PlayIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path d="M8 5v14l11-7z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function Spinner({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${className}`}
+    />
+  );
+}
+
+function formatClock(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 export default function JobPage() {
   const supabase = createClient();
@@ -122,13 +148,17 @@ export default function JobPage() {
     job?.status === "queued" ||
     job?.status === "generating_script" ||
     job?.status === "generating_audio";
-  const isGenerating = job?.status === "creating_animations" || job?.status === "rendering";
   const isReviewing = job?.status === "reviewing";
   const isFinalizing = job?.status === "finalizing";
   const isDone = job?.status === "ready";
   const isFailed = job?.status === "failed";
-  const showSegmentStrip = segments.length > 0;
-  const showReviewControls = isReviewing;
+  const isLive = !isDone && !isFailed; // pulses the status dot while anything is in motion
+
+  const clipStarts: number[] = [];
+  segments.reduce((t, s) => {
+    clipStarts.push(t);
+    return t + (s.duration ?? 0);
+  }, 0);
 
   async function regenerateSegment() {
     if (!active || !instructions.trim()) return;
@@ -206,60 +236,16 @@ export default function JobPage() {
   return (
     <>
       <Navbar user={user} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         <Link href="/dashboard">
           <Button variant="secondary">&#8592; Back to dashboard</Button>
         </Link>
-
-        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{job.title || "Untitled video"}</h1>
-            {showSegmentStrip && (
-              <p className="mt-1 text-sm text-gray-500">{segments.length} segment(s)</p>
-            )}
-          </div>
-
-          {isReviewing && (
-            <Button
-              onClick={() => setConfirmingFinalize(true)}
-              disabled={anyRegenerating || finalizing}
-            >
-              {finalizing ? "Starting..." : "Finalize video"}
-            </Button>
-          )}
-          {isDone && job.video_url && (
-            <Button disabled={downloading} onClick={downloadVideo}>
-              {downloading ? "Preparing download..." : "Download video"}
-            </Button>
-          )}
-        </div>
 
         {isFailed && (
           <div className="mt-6 rounded-lg bg-red-50 p-4 text-center">
             <p className="font-medium text-red-800">
               {job.error_message || "Generation failed. Please try again."}
             </p>
-          </div>
-        )}
-
-        {(isGenerating || isPreSegments) && (
-          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-100 p-6 text-center">
-            <p className="font-medium text-foreground">
-              {STAGE_LABEL[job.status] || "Working on your video..."}
-            </p>
-            {isGenerating && (
-              <p className="mt-1 text-sm text-gray-500">
-                {segments.length > 0
-                  ? `${segments.length} segment(s) ready so far — more on the way.`
-                  : "Segments will appear here as they're ready."}
-              </p>
-            )}
-          </div>
-        )}
-
-        {isFinalizing && (
-          <div className="mt-6 rounded-md bg-teal-light px-4 py-3 text-center text-sm text-teal-dark">
-            Combining segments into your final video — this page will update automatically.
           </div>
         )}
 
@@ -270,112 +256,232 @@ export default function JobPage() {
           <p className="mt-2 text-center text-sm text-red-600">{downloadError}</p>
         )}
 
-        {showSegmentStrip && (
-          <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
-            {segments.map((s) => {
-              const isSelected = s.index === effectiveSelected;
-              return (
-                <button
-                  key={s.index}
-                  onClick={() => setSelected(s.index)}
-                  className={`flex shrink-0 flex-col items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
-                    isSelected
-                      ? "border-teal bg-teal-light text-teal-dark"
-                      : "border-gray-200 text-gray-500 hover:border-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
-                      s.video_status === "regenerating"
-                        ? "animate-pulse bg-teal-light text-teal"
-                        : s.video_status === "failed"
-                          ? "bg-red-100 text-red-700"
-                          : s.video_status === "pending"
-                            ? "border border-dashed border-gray-300 text-gray-300"
-                            : isSelected
-                              ? "bg-teal text-white"
-                              : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {s.index + 1}
-                  </span>
-                  <span>Seg {s.index + 1}</span>
-                </button>
-              );
-            })}
-            {isGenerating && (
-              <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-300">
-                <span className="animate-pulse">more coming...</span>
+        {/* Studio workbench */}
+        <div className="mt-6 flex h-[75vh] min-h-[540px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-background">
+          {/* Top bar */}
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-teal text-xs font-bold text-white">
+                {(job.title || "V").charAt(0).toUpperCase()}
               </div>
-            )}
-          </div>
-        )}
-
-        {active && (
-          <div className="mt-6 rounded-lg border border-gray-200 p-6">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Segment {active.index + 1}</h2>
-              {active.video_status === "regenerating" && (
-                <span className="rounded-full bg-teal-light px-2.5 py-0.5 text-xs font-medium text-teal">
-                  Regenerating...
-                </span>
-              )}
-              {active.video_status === "failed" && (
-                <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                  Regeneration failed
-                </span>
-              )}
+              <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                {job.title || "Untitled video"}
+              </p>
             </div>
-
-            <div className="mt-4 aspect-video overflow-hidden rounded-md bg-gray-900">
-              {active.video_status === "regenerating" ? (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-gray-300">Regenerating this segment...</p>
-                </div>
-              ) : active.video_url ? (
-                <video key={active.video_url} src={active.video_url} controls className="h-full w-full" />
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-gray-300">
-                    {active.audio_status === "ready" ? "Animating this segment..." : "Not ready yet..."}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {showReviewControls && (
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-foreground">
-                  Instructions to regenerate
-                </label>
-                <textarea
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="e.g. make the title bigger and give it more space"
-                  rows={3}
-                  disabled={active.video_status === "regenerating"}
-                  className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal disabled:opacity-50"
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="flex items-center gap-1.5 rounded-full bg-teal-light px-2.5 py-1 text-[11px] font-medium text-teal-dark">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full bg-teal ${isLive ? "animate-pulse" : ""}`}
                 />
-                {regenError && <p className="mt-2 text-sm text-red-600">{regenError}</p>}
-                <div className="mt-3">
+                {OVERVIEW_LABEL[job.status] ?? job.status}
+              </span>
+              {isDone && job.video_url && (
+                <Button variant="primary" className="!px-3 !py-1.5 text-xs" disabled={downloading} onClick={downloadVideo}>
+                  {downloading ? "Preparing..." : "Download"}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Main row: script dock + canvas */}
+          <div className="flex min-h-0 flex-1">
+            <div className="hidden w-60 shrink-0 flex-col border-r border-gray-200 bg-white sm:flex">
+              <div className="flex items-center gap-1.5 border-b border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700">
+                Script
+              </div>
+              <div className="flex-1 overflow-y-auto p-3">
+                {segments.length === 0 ? (
+                  isPreSegments ? (
+                    <div className="space-y-2">
+                      {[85, 70, 90, 60].map((w, i) => (
+                        <div key={i} className="h-2.5 animate-pulse rounded bg-gray-100" style={{ width: `${w}%` }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-300">No script yet.</p>
+                  )
+                ) : (
+                  <div className="space-y-3 text-[13px] leading-relaxed text-gray-700">
+                    {segments.map((s) => (
+                      <p
+                        key={s.index}
+                        onClick={() => setSelected(s.index)}
+                        className={`-mx-1 cursor-pointer rounded px-1 transition-colors hover:bg-gray-100 ${
+                          s.index === effectiveSelected ? "bg-teal-light" : ""
+                        }`}
+                      >
+                        <span className="mr-1.5 text-[10px] font-semibold text-teal">
+                          {String(s.index + 1).padStart(2, "0")}
+                        </span>
+                        {s.narration_text ?? (
+                          <span className="italic text-gray-300">Writing...</span>
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto bg-gray-100 p-6">
+              <div className="flex aspect-video w-full max-w-xl items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
+                {isDone ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <PlayIcon className="h-8 w-8" />
+                    <span className="text-xs text-gray-300">Your final video is ready</span>
+                  </div>
+                ) : isFinalizing ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">Combining {segments.length} segment(s)...</span>
+                  </div>
+                ) : active?.video_status === "regenerating" ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">Regenerating this segment...</span>
+                  </div>
+                ) : active?.video_url ? (
+                  <video
+                    key={active.video_url}
+                    src={active.video_url}
+                    controls
+                    className="h-full w-full"
+                  />
+                ) : active?.video_status === "failed" ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <span className="text-xs">
+                      This segment failed to render
+                      {isReviewing ? " — try regenerating it below." : "."}
+                    </span>
+                  </div>
+                ) : active?.audio_status === "ready" ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">Animating this segment...</span>
+                  </div>
+                ) : isPreSegments ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">{OVERVIEW_LABEL[job.status]}</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-500">Select a segment below</span>
+                )}
+              </div>
+
+              {isReviewing && active && (
+                <div className="mt-4 w-full max-w-xl">
+                  <label className="text-xs font-medium text-foreground">
+                    Instructions to regenerate
+                  </label>
+                  <div className="mt-1.5 flex gap-2">
+                    <input
+                      value={instructions}
+                      onChange={(e) => setInstructions(e.target.value)}
+                      placeholder="e.g. make the title bigger"
+                      disabled={active.video_status === "regenerating"}
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal disabled:opacity-50"
+                    />
+                    <Button
+                      variant="outline"
+                      className="!px-3 !py-1.5 text-xs"
+                      onClick={regenerateSegment}
+                      disabled={active.video_status === "regenerating" || !instructions.trim()}
+                    >
+                      {active.video_status === "regenerating" ? "Regenerating..." : "Regenerate"}
+                    </Button>
+                  </div>
+                  {regenError && <p className="mt-2 text-xs text-red-600">{regenError}</p>}
                   <Button
-                    variant="outline"
-                    onClick={regenerateSegment}
-                    disabled={active.video_status === "regenerating" || !instructions.trim()}
+                    className="mt-3 w-full"
+                    onClick={() => setConfirmingFinalize(true)}
+                    disabled={anyRegenerating || finalizing}
                   >
-                    {active.video_status === "regenerating" ? "Regenerating..." : "Regenerate segment"}
+                    {finalizing ? "Starting..." : "Finalize video"}
                   </Button>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
 
-        {isDone && user && (
-          <div className="mt-8">
-            <FeedbackWidget jobId={job.id} userId={user.id} />
+              {isDone && user && (
+                <div className="mt-4 w-full max-w-xl">
+                  <FeedbackWidget jobId={job.id} userId={user.id} />
+                </div>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Timeline */}
+          {segments.length > 0 && (
+            <div className="shrink-0 overflow-x-auto border-t border-gray-200 bg-white px-4 py-3">
+              <div style={{ width: segments.length * 104 }}>
+                <div className="mb-1.5 flex gap-2 text-[9px] text-gray-300">
+                  {segments.map((s, i) => (
+                    <div key={s.index} style={{ width: 96 }}>
+                      {formatClock(clipStarts[i] ?? 0)}
+                    </div>
+                  ))}
+                </div>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <span className="w-10 shrink-0 text-[9px] font-semibold uppercase text-gray-300">
+                    Video
+                  </span>
+                  <div className="flex gap-2">
+                    {segments.map((s) => (
+                      <button
+                        key={s.index}
+                        onClick={() => setSelected(s.index)}
+                        style={{ width: 96 }}
+                        className={`relative flex h-10 items-center justify-center rounded-md text-[10px] font-medium transition-all ${
+                          s.index === effectiveSelected ? "ring-2 ring-teal" : ""
+                        } ${
+                          s.video_status === "regenerating"
+                            ? "animate-pulse bg-teal-light text-teal"
+                            : s.video_status === "failed"
+                              ? "bg-red-100 text-red-700"
+                              : s.video_status === "ready"
+                                ? "bg-gray-900 text-white"
+                                : s.audio_status === "ready"
+                                  ? "bg-gray-500 text-gray-100"
+                                  : "border border-dashed border-gray-200 bg-transparent text-gray-300"
+                        }`}
+                      >
+                        {s.video_status === "regenerating" ? null : s.video_status === "failed" ? (
+                          "!"
+                        ) : s.video_status === "ready" ? (
+                          <PlayIcon />
+                        ) : s.audio_status === "ready" ? (
+                          <Spinner />
+                        ) : (
+                          s.index + 1
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-10 shrink-0 text-[9px] font-semibold uppercase text-gray-300">
+                    Audio
+                  </span>
+                  <div className="flex gap-2">
+                    {segments.map((s) => (
+                      <div
+                        key={s.index}
+                        style={{ width: 96 }}
+                        className={`flex h-6 items-center justify-center rounded-md text-[10px] ${
+                          s.audio_status === "ready"
+                            ? "bg-teal-light text-teal-dark"
+                            : "border border-dashed border-gray-200 text-gray-300"
+                        }`}
+                      >
+                        {s.audio_status === "ready" ? "♫" : <Spinner className="h-3 w-3" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       <Modal open={confirmingFinalize} onClose={() => setConfirmingFinalize(false)}>
