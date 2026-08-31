@@ -64,6 +64,7 @@ export default function JobPage() {
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [rawScript, setRawScript] = useState<string | null>(null);
 
   const fetchSegments = useCallback(async () => {
     const res = await fetch(`/api/jobs/${params.id}/segments`);
@@ -91,6 +92,7 @@ export default function JobPage() {
         };
       });
     });
+    if (data.script) setRawScript(data.script);
   }, [params.id]);
 
   const fetchJob = useCallback(async () => {
@@ -351,7 +353,20 @@ export default function JobPage() {
               </div>
               <div className="flex-1 overflow-y-auto p-3">
                 {segments.length === 0 ? (
-                  isPreSegments ? (
+                  rawScript ? (
+                    // script.md uploads the moment the script is written — well before
+                    // segments.json exists, which needs the whole audio stage to finish
+                    // first. Show it raw (roughly cleaned of markers) rather than a
+                    // loading skeleton while segments are still being seeded.
+                    <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-gray-700">
+                      {rawScript
+                        .replace(/\[VISUAL:[\s\S]*?\]/g, "")
+                        .replace(/^#.*$/gm, "")
+                        .replace(/^Narration:\s*/gim, "")
+                        .replace(/\n{3,}/g, "\n\n")
+                        .trim()}
+                    </div>
+                  ) : isPreSegments ? (
                     <div className="space-y-2">
                       {[85, 70, 90, 60].map((w, i) => (
                         <div key={i} className="h-2.5 animate-pulse rounded bg-gray-100" style={{ width: `${w}%` }} />
@@ -414,8 +429,7 @@ export default function JobPage() {
                 ) : active?.video_status === "failed" ? (
                   <div className="flex flex-col items-center gap-2 text-gray-300">
                     <span className="text-xs">
-                      This segment failed to render
-                      {isReviewing ? " — try regenerating it below." : "."}
+                      This segment failed to render — try regenerating it below.
                     </span>
                   </div>
                 ) : active?.audio_status === "ready" ? (
@@ -433,7 +447,12 @@ export default function JobPage() {
                 )}
               </div>
 
-              {isReviewing && active && (
+              {/* Regen is per-segment and shouldn't wait on the whole job — a segment
+                  that's individually done (rendered or failed) is regenerable the moment
+                  it gets there, even while other segments (or, with chunked pipelining,
+                  other chunks) are still in progress. Only Finalize needs every segment
+                  done, so that stays gated on isReviewing specifically. */}
+              {active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
                 <div className="mt-4 w-full max-w-xl">
                   <label className="text-xs font-medium text-foreground">
                     Instructions to regenerate
@@ -456,13 +475,15 @@ export default function JobPage() {
                     </Button>
                   </div>
                   {regenError && <p className="mt-2 text-xs text-red-600">{regenError}</p>}
-                  <Button
-                    className="mt-3 w-full"
-                    onClick={() => setConfirmingFinalize(true)}
-                    disabled={anyRegenerating || finalizing}
-                  >
-                    {finalizing ? "Starting..." : "Finalize video"}
-                  </Button>
+                  {isReviewing && (
+                    <Button
+                      className="mt-3 w-full"
+                      onClick={() => setConfirmingFinalize(true)}
+                      disabled={anyRegenerating || finalizing}
+                    >
+                      {finalizing ? "Starting..." : "Finalize video"}
+                    </Button>
+                  )}
                 </div>
               )}
 

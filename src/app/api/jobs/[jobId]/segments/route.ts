@@ -116,6 +116,24 @@ export async function GET(
     // Not uploaded yet — fine, script dock/timeline just stay empty/loading.
   }
 
+  // script.md uploads the moment the script is written (on_script_ready in
+  // modal_app.py), well before segments.json exists — that needs the full audio
+  // stage to finish first. Expose the raw script as an early fallback so the script
+  // dock has real content to show long before per-segment narration_text is ready,
+  // instead of a loading skeleton for the whole audio stage.
+  let rawScript: string | null = null;
+  try {
+    const scriptObj = await r2.send(
+      new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: `videos/finals/${jobId}/script.md`,
+      })
+    );
+    rawScript = await scriptObj.Body!.transformToString();
+  } catch {
+    // Not uploaded yet — fine, script dock falls back to its loading state.
+  }
+
   const indices = new Set<number>([...statusByIndex.keys(), ...videoUrlByIndex.keys()]);
   const segments = Array.from(indices)
     .sort((a, b) => a - b)
@@ -136,5 +154,5 @@ export async function GET(
       };
     });
 
-  return NextResponse.json({ job_status: job.status, segments });
+  return NextResponse.json({ job_status: job.status, segments, script: rawScript });
 }

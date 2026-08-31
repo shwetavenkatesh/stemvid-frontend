@@ -25,9 +25,15 @@ export async function POST(
   if (!job) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
-  if (job.status !== "reviewing") {
+  // "rendering" is included alongside "reviewing" because of chunked render
+  // pipelining: segments now generate/review/render in groups, so a job can sit in
+  // "rendering" for a while with some segments individually done (ready or failed)
+  // while later chunks are still in progress. Regen only needs the target segment
+  // to already be in a terminal state, not the whole job — the studio UI already
+  // only shows the regen control once that segment's own video_status says so.
+  if (job.status !== "reviewing" && job.status !== "rendering") {
     return NextResponse.json(
-      { error: "Job is not in review — segments can only be regenerated before finalize" },
+      { error: "Job is not far enough along yet — segments can only be regenerated once they've finished their first render" },
       { status: 400 }
     );
   }

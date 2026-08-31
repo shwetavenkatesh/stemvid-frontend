@@ -94,9 +94,9 @@ describe("POST /api/jobs/[jobId]/regenerate", () => {
     expect(body.error).toBe("Job not found");
   });
 
-  it("returns 400 when job is not in review", async () => {
+  it("returns 400 when the job hasn't started rendering yet", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
-    mockJob({ id: "job-1", status: "rendering" });
+    mockJob({ id: "job-1", status: "generating_audio" });
 
     const res = await POST(
       makeRequest({ segment_index: 0, instructions: "bigger title" }),
@@ -105,7 +105,20 @@ describe("POST /api/jobs/[jobId]/regenerate", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toMatch(/not in review/);
+    expect(body.error).toMatch(/not far enough along/);
+  });
+
+  it("allows regen while status is 'rendering' (chunked pipelining: other chunks may still be in progress)", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockJob({ id: "job-1", status: "rendering" });
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+
+    const res = await POST(
+      makeRequest({ segment_index: 0, instructions: "bigger title" }),
+      makeParams("job-1")
+    );
+
+    expect(res.status).toBe(200);
   });
 
   it("returns 400 when segment_index is missing", async () => {

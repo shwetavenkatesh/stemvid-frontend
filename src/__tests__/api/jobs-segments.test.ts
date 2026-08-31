@@ -93,10 +93,12 @@ function mockR2({
   segmentKeys = [],
   audioKeys = [],
   segmentsJsonBody,
+  scriptBody,
 }: {
   segmentKeys?: string[];
   audioKeys?: string[];
   segmentsJsonBody?: string;
+  scriptBody?: string;
 }) {
   mockSend.mockImplementation((cmd: { input: { Prefix?: string; Key?: string } }) => {
     if (cmd.input.Prefix?.startsWith("videos/segments/")) {
@@ -108,6 +110,10 @@ function mockR2({
     if (cmd.input.Key?.endsWith("segments.json")) {
       if (segmentsJsonBody === undefined) return Promise.reject(new Error("NoSuchKey"));
       return Promise.resolve({ Body: { transformToString: () => Promise.resolve(segmentsJsonBody) } });
+    }
+    if (cmd.input.Key?.endsWith("script.md")) {
+      if (scriptBody === undefined) return Promise.reject(new Error("NoSuchKey"));
+      return Promise.resolve({ Body: { transformToString: () => Promise.resolve(scriptBody) } });
     }
     return Promise.reject(new Error(`unexpected key: ${cmd.input.Key}`));
   });
@@ -301,5 +307,31 @@ describe("GET /api/jobs/[jobId]/segments", () => {
     const body = await res.json();
 
     expect(body.segments[0].audio_url).toBeNull();
+  });
+
+  it("includes the raw script once script.md is available", async () => {
+    // script.md uploads the moment the script is written — well before
+    // segments.json, which needs the whole audio stage to finish first. This is
+    // the early-availability fallback the script dock uses while narration_text
+    // per segment is still empty.
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockTables({ id: "job-1", status: "generating_audio" }, []);
+    mockR2({ segmentKeys: [], scriptBody: "# Title\n\nNarration: Hello.\n[VISUAL: a circle]" });
+
+    const res = await GET(makeRequest(), makeParams("job-1"));
+    const body = await res.json();
+
+    expect(body.script).toBe("# Title\n\nNarration: Hello.\n[VISUAL: a circle]");
+  });
+
+  it("leaves script null when script.md isn't uploaded yet", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockTables({ id: "job-1", status: "queued" }, []);
+    mockR2({ segmentKeys: [] });
+
+    const res = await GET(makeRequest(), makeParams("job-1"));
+    const body = await res.json();
+
+    expect(body.script).toBeNull();
   });
 });
