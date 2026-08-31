@@ -8,7 +8,7 @@ export default function Hero() {
           stemvid.ai
         </p>
         <h1 className="mt-3 text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
-          The video studio for technical ideas.
+          The AI video studio for technical ideas.
         </h1>
         <p className="mt-6 text-lg text-gray-500 md:text-xl">
           Turn research papers and textbooks into a first draft in minutes,

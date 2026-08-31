@@ -391,11 +391,14 @@ export default function JobPage() {
                     className="h-full w-full"
                   />
                 ) : active?.video_status === "failed" ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                  <div className="flex flex-col items-center gap-3 text-gray-300">
                     <span className="text-xs">
                       This segment failed to render
                       {isReviewing ? " — try regenerating it below." : "."}
                     </span>
+                    {active.audio_status === "ready" && active.audio_url && (
+                      <audio key={active.audio_url} src={active.audio_url} controls className="h-8 w-56" />
+                    )}
                   </div>
                 ) : active?.audio_status === "ready" ? (
                   <div className="flex flex-col items-center gap-3 text-gray-300">
