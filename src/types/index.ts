@@ -22,6 +22,7 @@ export interface StudioSegment {
   audio_url: string | null;
   narration_text: string | null;
   duration: number | null;
+  regenerated: boolean;
 }
 
 export type Rating = "thumbs_up" | "thumbs_down";

@@ -171,6 +171,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         audio_url: null,
         narration_text: null,
         duration: null,
+        regenerated: false,
       },
       {
         index: 1,
@@ -180,6 +181,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         audio_url: null,
         narration_text: null,
         duration: null,
+        regenerated: false,
       },
     ]);
   });
@@ -196,8 +198,22 @@ describe("GET /api/jobs/[jobId]/segments", () => {
     const body = await res.json();
 
     expect(body.segments).toEqual([
-      { index: 0, video_url: null, video_status: "pending", audio_status: "ready", audio_url: null, narration_text: null, duration: null },
+      { index: 0, video_url: null, video_status: "pending", audio_status: "ready", audio_url: null, narration_text: null, duration: null, regenerated: false },
     ]);
+  });
+
+  it("reflects regenerated=true from the status row", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockTables(
+      { id: "job-1", status: "reviewing" },
+      [{ segment_index: 0, video_status: "ready", audio_status: "ready", regenerated: true }]
+    );
+    mockR2({ segmentKeys: [] });
+
+    const res = await GET(makeRequest(), makeParams("job-1"));
+    const body = await res.json();
+
+    expect(body.segments[0].regenerated).toBe(true);
   });
 
   it("infers ready status for a legacy segment with an mp4 but no status row", async () => {
@@ -217,6 +233,7 @@ describe("GET /api/jobs/[jobId]/segments", () => {
         audio_url: null,
         narration_text: null,
         duration: null,
+        regenerated: false,
       },
     ]);
   });

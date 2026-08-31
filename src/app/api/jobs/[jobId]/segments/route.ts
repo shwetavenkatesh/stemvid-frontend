@@ -39,7 +39,7 @@ export async function GET(
 
   const { data: statusRows } = await supabase
     .from("segment_status")
-    .select("segment_index, video_status, audio_status")
+    .select("segment_index, video_status, audio_status, regenerated")
     .eq("job_id", jobId);
   const statusByIndex = new Map(
     (statusRows ?? []).map((s) => [s.segment_index, s])
@@ -151,6 +151,7 @@ export async function GET(
         audio_url: audioUrlByIndex.get(index) ?? null,
         narration_text: narrationByIndex.get(index) ?? null,
         duration: durationByIndex.get(index) ?? null,
+        regenerated: row?.regenerated ?? false,
       };
     });
 
