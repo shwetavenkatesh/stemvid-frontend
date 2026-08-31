@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -99,7 +99,15 @@ export default function JobPage() {
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-    if (!authUser) return;
+    if (!authUser) {
+      // Was a silent no-op — on a long-open page (this one can sit through several
+      // minutes of finalize) a stale/expired client session would make every poll
+      // tick fail exactly like this, forever, with zero visible symptom besides the
+      // page just never updating again. Not proven root cause of a real incident,
+      // but confirmed plausible from reading this code, and worth being visible.
+      console.warn("[job page] fetchJob: no authenticated user — poll tick skipped");
+      return;
+    }
     const { data } = await supabase
       .from("jobs")
       .select("*")
@@ -182,15 +190,33 @@ export default function JobPage() {
 
   // Realtime is the fast path, but shouldn't be the only path — a dropped/unauthorized
   // websocket subscription would otherwise leave the page frozen on stale data with no
-  // way to recover short of a manual refresh. Polls only while the job is still moving.
+  // way to recover short of a manual refresh.
+  //
+  // Confirmed real 2026-08-31: this used to depend on `job` itself and re-derive
+  // "should I still be polling" from that dependency array — meaning the interval only
+  // kept re-arming itself as long as fetchJob() successfully called setJob() on every
+  // single cycle. One failed tick (e.g. a stale auth session — see fetchJob) left the
+  // *original* interval as the only thing still running, and if the underlying cause
+  // was persistent rather than transient, every future tick failed silently forever
+  // with no visible symptom beyond "the page just never updates again." A live job
+  // genuinely got stuck exactly like this. The interval is now created once (tied only
+  // to params.id, which never changes) and checks the latest status via a ref on every
+  // tick — a single bad fetch no longer has any effect on whether polling continues.
+  const jobStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!job || job.status === "ready" || job.status === "failed") return;
+    jobStatusRef.current = job?.status;
+  }, [job?.status]);
+
+  useEffect(() => {
+    if (!params.id) return;
     const interval = setInterval(() => {
+      const status = jobStatusRef.current;
+      if (status === "ready" || status === "failed") return;
       fetchJob();
       fetchSegments();
     }, 6000);
     return () => clearInterval(interval);
-  }, [job, fetchJob, fetchSegments]);
+  }, [params.id, fetchJob, fetchSegments]);
 
   useEffect(() => {
     if (job?.status !== "ready" || !job.video_url) return;
