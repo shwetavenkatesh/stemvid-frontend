@@ -412,22 +412,16 @@ export default function JobPage() {
                     className="h-full w-full"
                   />
                 ) : active?.video_status === "failed" ? (
-                  <div className="flex flex-col items-center gap-3 text-gray-300">
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
                     <span className="text-xs">
                       This segment failed to render
                       {isReviewing ? " — try regenerating it below." : "."}
                     </span>
-                    {active.audio_status === "ready" && active.audio_url && (
-                      <audio key={active.audio_url} src={active.audio_url} controls className="h-8 w-56" />
-                    )}
                   </div>
                 ) : active?.audio_status === "ready" ? (
-                  <div className="flex flex-col items-center gap-3 text-gray-300">
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
                     <Spinner className="h-6 w-6" />
                     <span className="text-xs">Animating this segment...</span>
-                    {active.audio_url && (
-                      <audio key={active.audio_url} src={active.audio_url} controls className="h-8 w-56" />
-                    )}
                   </div>
                 ) : isPreSegments ? (
                   <div className="flex flex-col items-center gap-2 text-gray-300">
@@ -556,6 +550,24 @@ export default function JobPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+
+              {/* Always-available player for the selected segment's narration audio —
+                  independent of video status, so audio is playable the instant it's
+                  ready and stays playable after video finishes too. A separate row
+                  (not inline with the Audio timeline row above) so it never shifts
+                  that row's buttons out of column alignment with the Video row. */}
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <span className="w-10 shrink-0 text-[9px] font-semibold uppercase text-gray-300">
+                  Play
+                </span>
+                {active?.audio_status === "ready" && active.audio_url ? (
+                  <audio key={active.audio_url} src={active.audio_url} controls className="h-7" />
+                ) : (
+                  <span className="text-[10px] text-gray-300">
+                    {active ? "No audio yet for this segment" : "Select a segment"}
+                  </span>
+                )}
               </div>
             </div>
           )}
