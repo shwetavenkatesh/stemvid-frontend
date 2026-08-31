@@ -65,6 +65,10 @@ export default function JobPage() {
   const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [rawScript, setRawScript] = useState<string | null>(null);
+  // Client-side only, this session — once a segment finishes regenerating there was no
+  // way to tell it apart from one that was never touched (same "ready" state either
+  // way). No backend/DB change needed for a same-session visual marker like this.
+  const [regeneratedIndices, setRegeneratedIndices] = useState<Set<number>>(new Set());
 
   const fetchSegments = useCallback(async () => {
     const res = await fetch(`/api/jobs/${params.id}/segments`);
@@ -254,6 +258,7 @@ export default function JobPage() {
     setSegments((prev) =>
       prev.map((s) => (s.index === active.index ? { ...s, video_status: "regenerating" } : s))
     );
+    setRegeneratedIndices((prev) => new Set(prev).add(active.index));
     const res = await fetch(`/api/jobs/${params.id}/regenerate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -287,7 +292,7 @@ export default function JobPage() {
     setDownloading(true);
     setDownloadError(null);
     try {
-      const res = await fetch(`/api/video/${job.id}`);
+      const res = await fetch(`/api/video/${job.id}?download=1`);
       if (!res.ok) {
         const body = await res.json();
         throw new Error(body.error || "Download failed");
@@ -569,6 +574,14 @@ export default function JobPage() {
                           <Spinner />
                         ) : (
                           s.index + 1
+                        )}
+                        {regeneratedIndices.has(s.index) && s.video_status !== "regenerating" && (
+                          <span
+                            title="Regenerated this session"
+                            className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-teal text-[8px] leading-none text-white"
+                          >
+                            ↻
+                          </span>
                         )}
                       </button>
                     ))}
