@@ -62,7 +62,7 @@ export async function GET(
         const url = await getSignedUrl(
           r2,
           new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME!, Key: key }),
-          { expiresIn: 3600 }
+          { expiresIn: 86400 }
         );
         videoUrlByIndex.set(parseInt(match[1], 10), url);
       })
@@ -87,7 +87,7 @@ export async function GET(
         const url = await getSignedUrl(
           r2,
           new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME!, Key: key }),
-          { expiresIn: 3600 }
+          { expiresIn: 86400 }
         );
         audioUrlByIndex.set(parseInt(match[1], 10), url);
       })
