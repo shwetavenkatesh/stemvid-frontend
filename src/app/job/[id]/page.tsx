@@ -69,7 +69,28 @@ export default function JobPage() {
     const res = await fetch(`/api/jobs/${params.id}/segments`);
     if (!res.ok) return;
     const data = await res.json();
-    setSegments(data.segments);
+    setSegments((prev) => {
+      const prevByIndex = new Map(prev.map((s) => [s.index, s]));
+      // The API re-signs every video/audio URL on every request — the string value
+      // changes even when it points at the exact same file (a presigned URL embeds a
+      // signing timestamp). <video>/<audio> below key off this URL, so accepting a
+      // fresh one on every 6s poll (or realtime event) was remounting the player and
+      // resetting playback mid-watch, confirmed real: the underlying files are
+      // complete (verified via ffprobe), only the URL churn was interrupting it. Keep
+      // the previous, still-valid URL stable when the segment's status hasn't actually
+      // changed; only accept the newly-signed one when it has (first became ready,
+      // or a regen produced a genuinely new render).
+      return (data.segments as StudioSegment[]).map((s) => {
+        const old = prevByIndex.get(s.index);
+        const videoUnchanged = !!old && old.video_status === s.video_status && !!old.video_url && !!s.video_url;
+        const audioUnchanged = !!old && old.audio_status === s.audio_status && !!old.audio_url && !!s.audio_url;
+        return {
+          ...s,
+          video_url: videoUnchanged ? old!.video_url : s.video_url,
+          audio_url: audioUnchanged ? old!.audio_url : s.audio_url,
+        };
+      });
+    });
   }, [params.id]);
 
   const fetchJob = useCallback(async () => {
