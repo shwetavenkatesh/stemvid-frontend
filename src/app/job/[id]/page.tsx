@@ -63,6 +63,11 @@ export default function JobPage() {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
+  // Which the main canvas shows once the job is done: the combined final video
+  // (true) or whichever segment is selected below (false). Defaults to the final
+  // video the moment the job finishes, but a segment click flips it back — see the
+  // "Final" timeline row and the segment buttons' onClick.
+  const [viewingFinal, setViewingFinal] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [rawScript, setRawScript] = useState<string | null>(null);
 
@@ -227,6 +232,18 @@ export default function JobPage() {
       })
       .catch(() => {});
   }, [job?.status, job?.video_url, job?.id]);
+
+  // Land on the final video by default the moment the job finishes (including on
+  // reopening an already-finished job) — but only once per "ready" transition, so
+  // a later click back onto a segment (see setViewingFinal(false) below) sticks.
+  // Adjusts state during render (React's documented alternative to an Effect for
+  // this exact "reset state when a value changes" case) rather than in a useEffect,
+  // which would cause an extra render pass on every status change.
+  const [viewingFinalStatusSeen, setViewingFinalStatusSeen] = useState<string | undefined>(undefined);
+  if (job?.status !== viewingFinalStatusSeen) {
+    setViewingFinalStatusSeen(job?.status);
+    if (job?.status === "ready") setViewingFinal(true);
+  }
 
   const effectiveSelected = selected ?? segments[0]?.index ?? null;
   const active = segments.find((s) => s.index === effectiveSelected) ?? null;
@@ -426,7 +443,7 @@ export default function JobPage() {
 
             <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto bg-gray-100 p-6">
               <div className="flex aspect-video w-full max-w-xl items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
-                {isDone ? (
+                {isDone && viewingFinal ? (
                   finalVideoUrl ? (
                     <video src={finalVideoUrl} controls className="h-full w-full" />
                   ) : (
@@ -478,7 +495,7 @@ export default function JobPage() {
                   it gets there, even while other segments (or, with chunked pipelining,
                   other chunks) are still in progress. Only Finalize needs every segment
                   done, so that stays gated on isReviewing specifically. */}
-              {active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
+              {!viewingFinal && active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
                 <div className="mt-4 w-full max-w-xl">
                   <label className="text-xs font-medium text-foreground">
                     Instructions to regenerate
@@ -545,10 +562,13 @@ export default function JobPage() {
                     {segments.map((s) => (
                       <button
                         key={s.index}
-                        onClick={() => setSelected(s.index)}
+                        onClick={() => {
+                          setSelected(s.index);
+                          setViewingFinal(false);
+                        }}
                         style={{ width: 96 }}
                         className={`relative flex h-10 items-center justify-center rounded-md text-[10px] font-medium transition-all ${
-                          s.index === effectiveSelected ? "ring-2 ring-teal" : ""
+                          s.index === effectiveSelected && !viewingFinal ? "ring-2 ring-teal" : ""
                         } ${
                           s.video_status === "regenerating"
                             ? "animate-pulse bg-teal-light text-teal"
@@ -590,10 +610,13 @@ export default function JobPage() {
                     {segments.map((s) => (
                       <button
                         key={s.index}
-                        onClick={() => setSelected(s.index)}
+                        onClick={() => {
+                          setSelected(s.index);
+                          setViewingFinal(false);
+                        }}
                         style={{ width: 96 }}
                         className={`flex h-6 items-center justify-center rounded-md text-[10px] transition-all ${
-                          s.index === effectiveSelected ? "ring-2 ring-teal" : ""
+                          s.index === effectiveSelected && !viewingFinal ? "ring-2 ring-teal" : ""
                         } ${
                           s.audio_status === "ready"
                             ? "bg-teal-light text-teal-dark"
@@ -624,6 +647,27 @@ export default function JobPage() {
                   </span>
                 )}
               </div>
+
+              {/* The combined, finished video — a deliberate, always-visible row
+                  once it exists, rather than something that silently takes over the
+                  main canvas. Clicking it (or nothing, right after finalize) shows it
+                  up top; clicking any segment above switches back to that segment. */}
+              {isDone && job.video_url && (
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="w-10 shrink-0 text-[9px] font-semibold uppercase text-gray-300">
+                    Final
+                  </span>
+                  <button
+                    onClick={() => setViewingFinal(true)}
+                    className={`flex h-8 items-center gap-1.5 rounded-md bg-gray-900 px-3 text-[10px] font-medium text-white transition-all ${
+                      viewingFinal ? "ring-2 ring-teal" : ""
+                    }`}
+                  >
+                    <PlayIcon className="h-3 w-3" />
+                    Combined video
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

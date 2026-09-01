@@ -12,12 +12,6 @@ export default function UnlimitedComingSoon() {
           Create more videos, edit your own script, and add your own voice or
           choose from multiple voices.
         </p>
-        <a
-          href="#contact"
-          className="mt-6 inline-block text-sm font-medium text-teal hover:text-teal-dark"
-        >
-          Sign up for early access &rarr;
-        </a>
       </div>
     </section>
   );

@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
+import { ADMIN_EMAIL } from "@/lib/admin";
 import type { Job } from "@/types";
-
-const ADMIN_EMAIL = "shwets.ven@gmail.com";
 
 interface Stats {
   totalUsers: number;

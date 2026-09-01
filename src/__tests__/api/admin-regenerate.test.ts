@@ -34,6 +34,7 @@ jest.mock("@/lib/supabase-server", () => ({
 global.fetch = mockFetch;
 process.env.MODAL_WEBHOOK_URL = "https://modal.example.com/trigger";
 
+import { ADMIN_EMAIL } from "@/lib/admin";
 import { POST } from "@/app/api/admin/jobs/[jobId]/regenerate/route";
 
 function makeRequest(body: unknown): InstanceType<typeof import("next/server").NextRequest> {
@@ -77,7 +78,7 @@ describe("POST /api/admin/jobs/[jobId]/regenerate", () => {
 
   it("returns 400 when segments array is empty", async () => {
     mockGetUser.mockResolvedValue({
-      data: { user: { id: "admin", email: "shwets.ven@gmail.com" } },
+      data: { user: { id: "admin", email: ADMIN_EMAIL } },
     });
 
     const res = await POST(makeRequest({ segments: [] }), makeParams("job-1"));
@@ -89,7 +90,7 @@ describe("POST /api/admin/jobs/[jobId]/regenerate", () => {
 
   it("returns 400 when segments is missing", async () => {
     mockGetUser.mockResolvedValue({
-      data: { user: { id: "admin", email: "shwets.ven@gmail.com" } },
+      data: { user: { id: "admin", email: ADMIN_EMAIL } },
     });
 
     const res = await POST(makeRequest({}), makeParams("job-1"));
@@ -101,7 +102,7 @@ describe("POST /api/admin/jobs/[jobId]/regenerate", () => {
 
   it("returns 502 when Modal webhook fails", async () => {
     mockGetUser.mockResolvedValue({
-      data: { user: { id: "admin", email: "shwets.ven@gmail.com" } },
+      data: { user: { id: "admin", email: ADMIN_EMAIL } },
     });
     mockFetch.mockResolvedValue({ ok: false, status: 500 });
 
@@ -114,7 +115,7 @@ describe("POST /api/admin/jobs/[jobId]/regenerate", () => {
 
   it("returns 200 and queues regeneration", async () => {
     mockGetUser.mockResolvedValue({
-      data: { user: { id: "admin", email: "shwets.ven@gmail.com" } },
+      data: { user: { id: "admin", email: ADMIN_EMAIL } },
     });
     mockFetch.mockResolvedValue({ ok: true });
 
@@ -127,7 +128,7 @@ describe("POST /api/admin/jobs/[jobId]/regenerate", () => {
 
   it("sends correct payload to Modal webhook", async () => {
     mockGetUser.mockResolvedValue({
-      data: { user: { id: "admin", email: "shwets.ven@gmail.com" } },
+      data: { user: { id: "admin", email: ADMIN_EMAIL } },
     });
     mockFetch.mockResolvedValue({ ok: true });
 

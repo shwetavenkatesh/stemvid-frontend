@@ -10,9 +10,14 @@ const points = [
       "Animations are rendered with Manim, an engine built for precise STEM visualization. Equations, graphs and diagrams are exact — not approximations.",
   },
   {
-    title: "No hallucinations. No misrepresented research.",
+    title: "Grounded in your source material",
     description:
-      "We don't guess, invent or embellish. A dedicated QA agent acts as an independent judge on every script — checking it against your source material and flagging anything unsupported before a single frame renders. If it's not in your paper, it's not in the video. Your credibility stays intact.",
+      "Script content traces back to the actual paper or textbook, not the model's general knowledge. If it's not in your source, it's not in the video.",
+  },
+  {
+    title: "No misrepresented research",
+    description:
+      "The model isn't allowed to editorialize, oversell, or distort what your source actually claims — and your review step is the real backstop, catching subtler distortion that grounding alone can't.",
   },
   {
     title: "You have the final say",
