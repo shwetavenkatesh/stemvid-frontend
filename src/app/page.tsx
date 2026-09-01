@@ -1,6 +1,5 @@
 import Navbar from "@/components/shared/Navbar";
 import Hero from "@/components/landing/Hero";
-import DemoVideos from "@/components/landing/DemoVideos";
 import HowItWorks from "@/components/landing/HowItWorks";
 import WhyItsAccurate from "@/components/landing/WhyItsAccurate";
 import WhoItsFor from "@/components/landing/WhoItsFor";
@@ -14,7 +13,6 @@ export default function LandingPage() {
       <Navbar user={null} />
       <main className="flex-1">
         <Hero />
-        <DemoVideos />
         <HowItWorks />
         <WhyItsAccurate />
         <WhoItsFor />

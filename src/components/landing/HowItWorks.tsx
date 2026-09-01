@@ -13,9 +13,9 @@ const steps = [
   },
   {
     number: "3",
-    title: "Receive your video in 10-15 minutes",
+    title: "Review your video, scene by scene",
     description:
-      "Download your precise, code-rendered animated explainer — ready to share.",
+      "Every scene renders separately. Watch each one and regenerate any that aren't right — finalize when it's ready.",
   },
 ];
 
@@ -23,7 +23,10 @@ export default function HowItWorks() {
   return (
     <section className="px-6 py-20">
       <div className="mx-auto max-w-4xl">
-        <h2 className="text-center text-2xl font-bold text-foreground md:text-3xl">
+        <p className="text-center text-sm font-semibold uppercase tracking-wide text-teal">
+          The process
+        </p>
+        <h2 className="mt-3 text-center text-2xl font-bold text-foreground md:text-3xl">
           How it works
         </h2>
 

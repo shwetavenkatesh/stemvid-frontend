@@ -124,6 +124,7 @@ describe("POST /api/feedback", () => {
     );
 
     expect(mockAdminInsert).toHaveBeenCalledWith({
+      feedback_type: "video",
       job_id: "job-1",
       user_id: "real-user",
       role: "Researcher",
@@ -136,6 +137,46 @@ describe("POST /api/feedback", () => {
       content_type: "YouTube / public content",
       additional_comments: "great",
     });
+  });
+
+  it("accepts product feedback with no job_id and skips the job ownership check", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "real-user" } } });
+    mockAdminInsert.mockResolvedValue({ error: null });
+
+    const res = await POST(
+      makeRequest({
+        feedback_type: "product",
+        top_missing_feature: "Custom voice",
+        features_wanted: ["Custom voice", "Script editing"],
+        nps_score: "9",
+        extra: "love it",
+      })
+    );
+    const resBody = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(resBody.ok).toBe(true);
+    expect(mockMaybeSingle).not.toHaveBeenCalled();
+    expect(mockAdminInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feedback_type: "product",
+        job_id: null,
+        user_id: "real-user",
+        top_missing_feature: "Custom voice",
+        features_wanted: ["Custom voice", "Script editing"],
+        nps_score: "9",
+        additional_comments: "love it",
+      })
+    );
+  });
+
+  it("returns 401 for product feedback when not authenticated, without requiring job_id", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    const res = await POST(makeRequest({ feedback_type: "product" }));
+
+    expect(res.status).toBe(401);
+    expect(mockAdminInsert).not.toHaveBeenCalled();
   });
 
   it("returns 500 when the insert fails", async () => {

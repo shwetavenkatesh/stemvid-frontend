@@ -39,7 +39,7 @@ export default function MaintenancePage() {
       <h1 className="text-3xl font-bold text-teal md:text-4xl">stemvid.ai</h1>
       <p className="mt-4 text-lg font-medium text-foreground">Coming Soon</p>
       <p className="mt-2 text-sm text-gray-500">
-        Turn research papers into animated explainer videos
+        The video studio for technical ideas
       </p>
 
       <div className="mt-10 w-full max-w-sm">

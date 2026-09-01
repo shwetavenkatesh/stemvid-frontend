@@ -6,18 +6,12 @@ export default function UnlimitedComingSoon() {
           Coming soon
         </span>
         <h2 className="mt-4 text-2xl font-bold text-foreground md:text-3xl">
-          Unlimited
+          Gain more control
         </h2>
         <p className="mt-3 text-gray-500">
-          Free, bring your own Anthropic API key. Create more videos and
-          regenerate any segment.
+          Create more videos, edit your own script, and add your own voice or
+          choose from multiple voices.
         </p>
-        <a
-          href="#contact"
-          className="mt-6 inline-block text-sm font-medium text-teal hover:text-teal-dark"
-        >
-          Sign up for early access &rarr;
-        </a>
       </div>
     </section>
   );

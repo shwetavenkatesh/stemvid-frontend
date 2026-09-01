@@ -6,8 +6,24 @@ export type JobStatus =
   | "generating_audio"
   | "creating_animations"
   | "rendering"
+  | "reviewing"
+  | "finalizing"
   | "ready"
   | "failed";
+
+export type SegmentVideoStatus = "pending" | "ready" | "regenerating" | "failed";
+export type SegmentAudioStatus = "pending" | "ready";
+
+export interface StudioSegment {
+  index: number;
+  video_url: string | null;
+  video_status: SegmentVideoStatus;
+  audio_status: SegmentAudioStatus;
+  audio_url: string | null;
+  narration_text: string | null;
+  duration: number | null;
+  regenerated: boolean;
+}
 
 export type Rating = "thumbs_up" | "thumbs_down";
 
@@ -18,6 +34,7 @@ export interface Profile {
   videos_used_this_month: number;
   created_at: string;
   accepted_tos_at: string | null;
+  anthropic_api_key_id: string | null;
 }
 
 export interface RegenLog {

@@ -28,14 +28,18 @@ export default function Navbar({
               >
                 Dashboard
               </Link>
-              {user.email === "shwets.ven@gmail.com" && (
-                <Link
-                  href="/admin"
-                  className="text-sm text-gray-700 hover:text-teal"
-                >
-                  Admin
-                </Link>
-              )}
+              <Link
+                href="/settings"
+                className="text-sm text-gray-700 hover:text-teal"
+              >
+                Settings
+              </Link>
+              <Link
+                href="/feedback"
+                className="text-sm text-gray-700 hover:text-teal"
+              >
+                Feedback
+              </Link>
               <button
                 onClick={async () => {
                   const supabase = createClient();

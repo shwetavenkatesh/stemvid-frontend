@@ -14,7 +14,10 @@ import Button from "@/components/shared/Button";
 import Link from "next/link";
 import type { Job, Course, Profile } from "@/types";
 
-const VIDEO_LIMITS = { free: 2, pro: 7 };
+// Matches BYOK_FREE_VIDEO_LIMIT in modal_app.py — a one-time lifetime grant, not
+// a monthly allowance. Past this, generation requires a BYOK Anthropic key (see
+// /settings) and is then uncapped.
+const FREE_LIFETIME_VIDEO_LIMIT = 2;
 
 export default function DashboardPage() {
   const supabase = createClient();
@@ -26,6 +29,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [acceptingTos, setAcceptingTos] = useState(false);
+  // null = not checked yet (or check failed/skipped) -- fails open, since a
+  // network hiccup on this check shouldn't block someone with a working key.
+  const [keyValid, setKeyValid] = useState<boolean | null>(null);
 
   const loadJobs = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -63,6 +69,30 @@ export default function DashboardPage() {
         .single();
       if (profileData) setProfile(profileData);
 
+      if (profileData?.anthropic_api_key_id) {
+        // Once per browser session, not once per dashboard mount -- the
+        // dashboard is the one page every login path lands on, but it also
+        // re-mounts on every later visit within the same session, and this
+        // check does a live call to Anthropic that shouldn't fire that often.
+        const cached = sessionStorage.getItem("byok_key_valid");
+        if (cached !== null) {
+          setKeyValid(cached === "true");
+        } else {
+          try {
+            const res = await fetch("/api/settings/anthropic-key");
+            if (res.ok) {
+              const data = await res.json();
+              const valid = !!data.keyValid;
+              setKeyValid(valid);
+              sessionStorage.setItem("byok_key_valid", String(valid));
+            }
+          } catch {
+            // Leave keyValid at null (fail open) -- a network hiccup here
+            // shouldn't block someone with a perfectly good key.
+          }
+        }
+      }
+
       await Promise.all([loadJobs(authUser.id), loadCourses(authUser.id)]);
       setLoading(false);
     }
@@ -78,9 +108,17 @@ export default function DashboardPage() {
   }
 
   const tier = profile?.tier ?? "free";
-  const limit = VIDEO_LIMITS[tier];
-  const used = profile?.videos_used_this_month ?? 0;
-  const remaining = Math.max(0, limit - used);
+  const hasByokKey = !!profile?.anthropic_api_key_id;
+  // keyValid is only meaningful once a key is on file -- null (not checked, or
+  // check failed) is treated as "assume fine," matching modal_app.py's own
+  // fail-open on a network hiccup during the live Anthropic check.
+  const byokKeyDead = hasByokKey && keyValid === false;
+  // jobs is every job row this user has ever had (loadJobs has no date filter),
+  // one row per generated video/chapter/part — the same count modal_app.py's
+  // _lifetime_video_count uses to gate generation.
+  const lifetimeVideos = jobs.length;
+  const freeRemaining = Math.max(0, FREE_LIFETIME_VIDEO_LIMIT - lifetimeVideos);
+  const canGenerate = freeRemaining > 0 || (hasByokKey && !byokKeyDead);
 
   async function handleAgreeTos() {
     if (!user) return;
@@ -118,26 +156,27 @@ export default function DashboardPage() {
               Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              <span className="inline-block rounded-full bg-teal-light px-2.5 py-0.5 text-xs font-medium text-teal capitalize">
-                {tier}
-              </span>
-              <span className="ml-3">
-                {remaining} video{remaining !== 1 ? "s" : ""} remaining this
-                month
-              </span>
+              {freeRemaining > 0
+                ? `${freeRemaining} free video${freeRemaining !== 1 ? "s" : ""} remaining`
+                : hasByokKey
+                  ? byokKeyDead
+                    ? "Your Anthropic API key isn't working anymore"
+                    : "Generating with your own Anthropic API key"
+                  : "Free videos used"}
             </p>
           </div>
-          {remaining > 0 ? (
+          {canGenerate ? (
             <Button onClick={() => setShowForm(true)}>
               Generate new video
             </Button>
           ) : (
             <Link
-              href="/#contact"
+              href="/settings"
               className="text-sm font-medium text-teal hover:underline"
             >
-              Need more videos? We&apos;re in beta — contact us and
-              we&apos;ll help you out.
+              {byokKeyDead
+                ? "Update your Anthropic API key to keep generating"
+                : "Add your Anthropic API key to keep generating"}
             </Link>
           )}
         </div>

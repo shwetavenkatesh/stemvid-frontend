@@ -13,10 +13,11 @@ const r2 = new S3Client({
 });
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   const { jobId } = await params;
+  const wantsDownload = new URL(req.url).searchParams.get("download") === "1";
 
   const supabase = await createClient();
   const {
@@ -43,10 +44,16 @@ export async function GET(
 
   const filename = `${job.title || "video"}.mp4`.replace(/[^a-zA-Z0-9._-]/g, "_");
 
+  // Same endpoint serves two different callers: the in-page player (fetches this to
+  // populate a <video src>) and the explicit Download button. "attachment" used to be
+  // hardcoded, which forces every browser to treat the URL as a forced download rather
+  // than something a <video> tag can play inline — confirmed real: the final video was
+  // never actually watchable in the studio, only downloadable, for exactly this reason.
+  // Only apply it when the caller explicitly asks to download.
   const command = new GetObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME!,
     Key: job.video_url,
-    ResponseContentDisposition: `attachment; filename="${filename}"`,
+    ...(wantsDownload ? { ResponseContentDisposition: `attachment; filename="${filename}"` } : {}),
   });
 
   try {

@@ -45,6 +45,7 @@ describe("types", () => {
       videos_used_this_month: 0,
       created_at: "2026-01-01",
       accepted_tos_at: null,
+      anthropic_api_key_id: null,
     };
     expect(profile.tier).toBe("free");
   });

@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   const {
+    feedback_type,
     job_id,
     role,
     field,
@@ -23,9 +24,19 @@ export async function POST(req: NextRequest) {
     use_again,
     purpose,
     extra,
+    top_missing_feature,
+    features_wanted,
+    nps_score,
   } = body;
 
-  if (!job_id) {
+  // "video" (per-finished-video quality feedback, tied to a job) is the default —
+  // the only type the existing widget has ever sent, and its job_id requirement
+  // must be checked here, before any Supabase call, so a malformed video-type
+  // request still fails cleanly. "product" (general, not tied to a job — the
+  // Feedback nav tab) skips this entirely.
+  const type = feedback_type === "product" ? "product" : "video";
+
+  if (type === "video" && !job_id) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
@@ -38,20 +49,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { data: job } = await authedClient
-    .from("jobs")
-    .select("id")
-    .eq("id", job_id)
-    .eq("user_id", authUser.id)
-    .maybeSingle();
+  if (type === "video") {
+    const { data: job } = await authedClient
+      .from("jobs")
+      .select("id")
+      .eq("id", job_id)
+      .eq("user_id", authUser.id)
+      .maybeSingle();
 
-  if (!job) {
-    return NextResponse.json({ error: "Job not found" }, { status: 403 });
+    if (!job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 403 });
+    }
   }
 
   const supabase = createAdminClient();
   const { error: dbError } = await supabase.from("feedback").insert({
-    job_id,
+    feedback_type: type,
+    job_id: type === "video" ? job_id : null,
     user_id: authUser.id,
     role,
     field,
@@ -62,6 +76,9 @@ export async function POST(req: NextRequest) {
     would_return: use_again,
     content_type: purpose,
     additional_comments: extra,
+    top_missing_feature,
+    features_wanted,
+    nps_score,
   });
 
   if (dbError) {
@@ -79,7 +96,10 @@ export async function POST(req: NextRequest) {
     await resend.emails.send({
       from: "stemvid.ai <notifications@stemvid.ai>",
       to: ADMIN_EMAIL,
-      subject: `[stemvid] New feedback for job ${job_id}`,
+      subject:
+        type === "product"
+          ? "[stemvid] New product feedback"
+          : `[stemvid] New feedback for job ${job_id}`,
       text: lines,
     });
   }

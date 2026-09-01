@@ -46,10 +46,10 @@ jest.mock("@/lib/supabase-server", () => ({
 
 import { GET } from "@/app/api/video/[jobId]/route";
 
-function makeRequest(): InstanceType<typeof import("next/server").NextRequest> {
+function makeRequest(query = ""): InstanceType<typeof import("next/server").NextRequest> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { NextRequest } = require("next/server");
-  return new NextRequest("http://localhost/api/video/job-1");
+  return new NextRequest(`http://localhost/api/video/job-1${query}`);
 }
 
 function makeParams(jobId: string): { params: Promise<{ jobId: string }> } {
@@ -164,7 +164,7 @@ describe("GET /api/video/[jobId]", () => {
     });
     mockGetSignedUrl.mockResolvedValue("https://r2.example.com/signed-url");
 
-    await GET(makeRequest(), makeParams("job-1"));
+    await GET(makeRequest("?download=1"), makeParams("job-1"));
 
     expect(mockGetObjectCommand).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -187,11 +187,36 @@ describe("GET /api/video/[jobId]", () => {
     });
     mockGetSignedUrl.mockResolvedValue("https://r2.example.com/signed-url");
 
-    await GET(makeRequest(), makeParams("job-1"));
+    await GET(makeRequest("?download=1"), makeParams("job-1"));
 
     expect(mockGetObjectCommand).toHaveBeenCalledWith(
       expect.objectContaining({
         ResponseContentDisposition: 'attachment; filename="video.mp4"',
+      })
+    );
+  });
+
+  it("omits ResponseContentDisposition when not downloading, so a <video> tag can play it inline", async () => {
+    // Confirmed real: this same endpoint is used by the in-page player (fetches this to
+    // populate a <video src>) and the explicit Download button. Forcing "attachment" on
+    // every call made the final video unwatchable in the studio, only downloadable.
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    mockSupabaseJob({
+      id: "job-1",
+      user_id: "user-1",
+      title: "Test",
+      status: "ready",
+      video_url: "videos/job-1/final.mp4",
+    });
+    mockGetSignedUrl.mockResolvedValue("https://r2.example.com/signed-url");
+
+    await GET(makeRequest(), makeParams("job-1"));
+
+    expect(mockGetObjectCommand).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        ResponseContentDisposition: expect.anything(),
       })
     );
   });

@@ -6,9 +6,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import Navbar from "@/components/shared/Navbar";
 import Button from "@/components/shared/Button";
+import { ADMIN_EMAIL } from "@/lib/admin";
 import type { Job } from "@/types";
-
-const ADMIN_EMAIL = "shwets.ven@gmail.com";
 
 export default function AdminJobPage() {
   const supabase = createClient();
