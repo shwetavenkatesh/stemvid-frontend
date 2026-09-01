@@ -34,6 +34,7 @@ export interface Profile {
   videos_used_this_month: number;
   created_at: string;
   accepted_tos_at: string | null;
+  anthropic_api_key_id: string | null;
 }
 
 export interface RegenLog {

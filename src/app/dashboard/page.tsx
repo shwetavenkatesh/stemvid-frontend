@@ -14,7 +14,10 @@ import Button from "@/components/shared/Button";
 import Link from "next/link";
 import type { Job, Course, Profile } from "@/types";
 
-const VIDEO_LIMITS = { free: 2, pro: 7 };
+// Matches BYOK_FREE_VIDEO_LIMIT in modal_app.py — a one-time lifetime grant, not
+// a monthly allowance. Past this, generation requires a BYOK Anthropic key (see
+// /settings) and is then uncapped.
+const FREE_LIFETIME_VIDEO_LIMIT = 2;
 
 export default function DashboardPage() {
   const supabase = createClient();
@@ -78,9 +81,13 @@ export default function DashboardPage() {
   }
 
   const tier = profile?.tier ?? "free";
-  const limit = VIDEO_LIMITS[tier];
-  const used = profile?.videos_used_this_month ?? 0;
-  const remaining = Math.max(0, limit - used);
+  const hasByokKey = !!profile?.anthropic_api_key_id;
+  // jobs is every job row this user has ever had (loadJobs has no date filter),
+  // one row per generated video/chapter/part — the same count modal_app.py's
+  // _lifetime_video_count uses to gate generation.
+  const lifetimeVideos = jobs.length;
+  const freeRemaining = Math.max(0, FREE_LIFETIME_VIDEO_LIMIT - lifetimeVideos);
+  const canGenerate = freeRemaining > 0 || hasByokKey;
 
   async function handleAgreeTos() {
     if (!user) return;
@@ -122,22 +129,24 @@ export default function DashboardPage() {
                 {tier}
               </span>
               <span className="ml-3">
-                {remaining} video{remaining !== 1 ? "s" : ""} remaining this
-                month
+                {freeRemaining > 0
+                  ? `${freeRemaining} free video${freeRemaining !== 1 ? "s" : ""} remaining`
+                  : hasByokKey
+                    ? "Generating with your own Anthropic API key"
+                    : "Free videos used"}
               </span>
             </p>
           </div>
-          {remaining > 0 ? (
+          {canGenerate ? (
             <Button onClick={() => setShowForm(true)}>
               Generate new video
             </Button>
           ) : (
             <Link
-              href="/#contact"
+              href="/settings"
               className="text-sm font-medium text-teal hover:underline"
             >
-              Need more videos? We&apos;re in beta — contact us and
-              we&apos;ll help you out.
+              Add your Anthropic API key to keep generating
             </Link>
           )}
         </div>
