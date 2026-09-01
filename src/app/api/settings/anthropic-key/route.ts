@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 // Cheap, free validation: listing models is metadata-only, no generation tokens
 // spent. Confirms the key is real before we ever store it, instead of only
@@ -33,7 +34,25 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  return NextResponse.json({ hasKey: !!profile?.anthropic_api_key_id });
+  const hasKey = !!profile?.anthropic_api_key_id;
+  if (!hasKey) {
+    return NextResponse.json({ hasKey: false });
+  }
+
+  // Live-validate: a key valid when saved can expire later (e.g. a 30-day
+  // console key), so anthropic_api_key_id's mere presence isn't enough. Same
+  // service-role RPC modal_app.py calls to decrypt the key for a real job --
+  // the raw key never leaves this handler.
+  const admin = createAdminClient();
+  const { data: rawKey } = await admin.rpc("get_byok_anthropic_key", {
+    target_user_id: user.id,
+  });
+  const keyValid =
+    typeof rawKey === "string" && rawKey.length > 0
+      ? await isValidAnthropicKey(rawKey)
+      : false;
+
+  return NextResponse.json({ hasKey: true, keyValid });
 }
 
 export async function POST(req: NextRequest) {

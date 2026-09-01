@@ -1,6 +1,7 @@
 const mockGetUser = jest.fn();
 const mockFrom = jest.fn();
 const mockRpc = jest.fn();
+const mockAdminRpc = jest.fn();
 const mockFetch = jest.fn();
 
 jest.mock("next/server", () => {
@@ -31,6 +32,12 @@ jest.mock("@/lib/supabase-server", () => ({
       from: (table: string) => mockFrom(table),
       rpc: (fn: string, args?: unknown) => mockRpc(fn, args),
     }),
+}));
+
+jest.mock("@/lib/supabase-admin", () => ({
+  createAdminClient: () => ({
+    rpc: (fn: string, args?: unknown) => mockAdminRpc(fn, args),
+  }),
 }));
 
 global.fetch = mockFetch;
@@ -70,17 +77,36 @@ describe("GET /api/settings/anthropic-key", () => {
     expect(body.error).toBe("Unauthorized");
   });
 
-  it("returns hasKey: true when a key is on file", async () => {
+  it("returns hasKey: true and keyValid: true when the key on file still validates", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockProfile({ anthropic_api_key_id: "some-uuid" });
+    mockAdminRpc.mockResolvedValue({ data: "sk-ant-live" });
+    mockFetch.mockResolvedValue({ ok: true });
 
     const res = await GET();
     const body = await res.json();
 
     expect(body.hasKey).toBe(true);
+    expect(body.keyValid).toBe(true);
+    expect(mockAdminRpc).toHaveBeenCalledWith("get_byok_anthropic_key", {
+      target_user_id: "user-1",
+    });
   });
 
-  it("returns hasKey: false when no key is on file", async () => {
+  it("returns hasKey: true and keyValid: false when the key on file no longer validates", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    mockProfile({ anthropic_api_key_id: "some-uuid" });
+    mockAdminRpc.mockResolvedValue({ data: "sk-ant-expired" });
+    mockFetch.mockResolvedValue({ ok: false });
+
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.hasKey).toBe(true);
+    expect(body.keyValid).toBe(false);
+  });
+
+  it("returns hasKey: false when no key is on file, without a live check", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     mockProfile({ anthropic_api_key_id: null });
 
@@ -88,6 +114,8 @@ describe("GET /api/settings/anthropic-key", () => {
     const body = await res.json();
 
     expect(body.hasKey).toBe(false);
+    expect(mockAdminRpc).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
 

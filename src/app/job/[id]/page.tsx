@@ -486,7 +486,7 @@ export default function JobPage() {
                     <input
                       value={instructions}
                       onChange={(e) => setInstructions(e.target.value)}
-                      placeholder="e.g. make the title bigger"
+                      placeholder="e.g. make the title bigger, or fix where the title overlaps the diagram"
                       disabled={active.video_status === "regenerating"}
                       className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal disabled:opacity-50"
                     />
