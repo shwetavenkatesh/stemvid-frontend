@@ -395,48 +395,30 @@ export default function JobPage() {
                 Script
               </div>
               <div className="flex-1 overflow-y-auto p-3">
-                {segments.length === 0 ? (
-                  rawScript ? (
-                    // script.md uploads the moment the script is written — well before
-                    // segments.json exists, which needs the whole audio stage to finish
-                    // first. Show it raw (roughly cleaned of markers) rather than a
-                    // loading skeleton while segments are still being seeded.
-                    <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-gray-700">
-                      {rawScript
-                        .replace(/\[VISUAL:[\s\S]*?\]/g, "")
-                        .replace(/^#.*$/gm, "")
-                        .replace(/^Narration:\s*/gim, "")
-                        .replace(/\n{3,}/g, "\n\n")
-                        .trim()}
-                    </div>
-                  ) : isPreSegments ? (
-                    <div className="space-y-2">
-                      {[85, 70, 90, 60].map((w, i) => (
-                        <div key={i} className="h-2.5 animate-pulse rounded bg-gray-100" style={{ width: `${w}%` }} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-300">No script yet.</p>
-                  )
-                ) : (
-                  <div className="space-y-3 text-[13px] leading-relaxed text-gray-700">
-                    {segments.map((s) => (
-                      <p
-                        key={s.index}
-                        onClick={() => setSelected(s.index)}
-                        className={`-mx-1 cursor-pointer rounded px-1 transition-colors hover:bg-gray-100 ${
-                          s.index === effectiveSelected ? "bg-teal-light" : ""
-                        }`}
-                      >
-                        <span className="mr-1.5 text-[10px] font-semibold text-teal">
-                          {String(s.index + 1).padStart(2, "0")}
-                        </span>
-                        {s.narration_text ?? (
-                          <span className="italic text-gray-300">Writing...</span>
-                        )}
-                      </p>
+                {/* Always the raw script.md, never the per-segment narration_text list —
+                    that second source (from segments.json) only exists once the whole
+                    audio stage finishes, while segment_status rows (which used to gate
+                    this switch) show up earlier, per segment. That mismatch made the
+                    dock flash from real script text to "Writing..." for every segment
+                    during that gap. script.md alone is simpler and is the same content
+                    anyway. */}
+                {rawScript ? (
+                  <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-gray-700">
+                    {rawScript
+                      .replace(/\[VISUAL:[\s\S]*?\]/g, "")
+                      .replace(/^#.*$/gm, "")
+                      .replace(/^Narration:\s*/gim, "")
+                      .replace(/\n{3,}/g, "\n\n")
+                      .trim()}
+                  </div>
+                ) : isPreSegments ? (
+                  <div className="space-y-2">
+                    {[85, 70, 90, 60].map((w, i) => (
+                      <div key={i} className="h-2.5 animate-pulse rounded bg-gray-100" style={{ width: `${w}%` }} />
                     ))}
                   </div>
+                ) : (
+                  <p className="text-xs text-gray-300">No script yet.</p>
                 )}
               </div>
             </div>
