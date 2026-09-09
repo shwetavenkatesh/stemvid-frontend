@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import Navbar from "@/components/shared/Navbar";
 import FeedbackWidget from "@/components/job/FeedbackWidget";
 import Button from "@/components/shared/Button";
 import Modal from "@/components/shared/Modal";
@@ -329,19 +328,15 @@ export default function JobPage() {
 
   if (!job) {
     return (
-      <>
-        <Navbar user={user} />
-        <main className="flex flex-1 items-center justify-center">
-          <p className="text-gray-500">Job not found.</p>
-        </main>
-      </>
+      <main className="flex flex-1 items-center justify-center">
+        <p className="text-gray-500">Job not found.</p>
+      </main>
     );
   }
 
   return (
     <>
-      <Navbar user={user} />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+    <main className="w-full flex-1 px-4 py-6 sm:px-6">
         <Link href="/dashboard">
           <Button variant="secondary">&#8592; Back to dashboard</Button>
         </Link>
