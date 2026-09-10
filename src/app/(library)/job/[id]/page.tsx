@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import Navbar from "@/components/shared/Navbar";
 import FeedbackWidget from "@/components/job/FeedbackWidget";
 import Button from "@/components/shared/Button";
 import Modal from "@/components/shared/Modal";
@@ -70,6 +69,8 @@ export default function JobPage() {
   const [viewingFinal, setViewingFinal] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [rawScript, setRawScript] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
 
   const fetchSegments = useCallback(async () => {
     const res = await fetch(`/api/jobs/${params.id}/segments`);
@@ -249,6 +250,25 @@ export default function JobPage() {
   const active = segments.find((s) => s.index === effectiveSelected) ?? null;
   const anyRegenerating = segments.some((s) => s.video_status === "regenerating");
 
+  // Resets the duration labels whenever the underlying media actually changes
+  // (a new segment, a regen, or switching to the combined final video) so a
+  // stale duration never lingers next to a different clip. Same render-time
+  // reset pattern as viewingFinalStatusSeen above, not an effect.
+  const activeVideoKey =
+    job?.status === "ready" && viewingFinal ? finalVideoUrl : (active?.video_url ?? null);
+  const [videoDurationFor, setVideoDurationFor] = useState<string | null>(null);
+  if (activeVideoKey !== videoDurationFor) {
+    setVideoDurationFor(activeVideoKey);
+    setVideoDuration(null);
+  }
+
+  const activeAudioKey = active?.audio_url ?? null;
+  const [audioDurationFor, setAudioDurationFor] = useState<string | null>(null);
+  if (activeAudioKey !== audioDurationFor) {
+    setAudioDurationFor(activeAudioKey);
+    setAudioDuration(null);
+  }
+
   const isPreSegments =
     job?.status === "queued" ||
     job?.status === "generating_script" ||
@@ -329,19 +349,15 @@ export default function JobPage() {
 
   if (!job) {
     return (
-      <>
-        <Navbar user={user} />
-        <main className="flex flex-1 items-center justify-center">
-          <p className="text-gray-500">Job not found.</p>
-        </main>
-      </>
+      <main className="flex flex-1 items-center justify-center">
+        <p className="text-gray-500">Job not found.</p>
+      </main>
     );
   }
 
   return (
     <>
-      <Navbar user={user} />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+    <main className="w-full flex-1 px-4 py-6 sm:px-6">
         <Link href="/dashboard">
           <Button variant="secondary">&#8592; Back to dashboard</Button>
         </Link>
@@ -362,14 +378,17 @@ export default function JobPage() {
         )}
 
         {/* Studio workbench */}
-        <div className="mt-6 flex h-[75vh] min-h-[540px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-background">
+        <div className="mt-6 flex h-[85vh] min-h-[640px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-background">
           {/* Top bar */}
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-teal text-xs font-bold text-white">
                 {(job.title || "V").charAt(0).toUpperCase()}
               </div>
-              <p className="truncate text-sm font-semibold leading-tight text-foreground">
+              <p
+                title={job.title || "Untitled video"}
+                className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground"
+              >
                 {job.title || "Untitled video"}
               </p>
             </div>
@@ -380,6 +399,16 @@ export default function JobPage() {
                 />
                 {OVERVIEW_LABEL[job.status] ?? job.status}
               </span>
+              {isReviewing && (
+                <Button
+                  variant="primary"
+                  className="!px-3 !py-1.5 text-xs font-semibold"
+                  onClick={() => setConfirmingFinalize(true)}
+                  disabled={anyRegenerating || finalizing}
+                >
+                  {finalizing ? "Starting..." : "Finalize video"}
+                </Button>
+              )}
               {isDone && job.video_url && (
                 <Button variant="primary" className="!px-3 !py-1.5 text-xs" disabled={downloading} onClick={downloadVideo}>
                   {downloading ? "Preparing..." : "Download"}
@@ -388,9 +417,119 @@ export default function JobPage() {
             </div>
           </div>
 
-          {/* Main row: script dock + canvas */}
+          {/* Main row: canvas (hero) + script reference rail */}
           <div className="flex min-h-0 flex-1">
-            <div className="hidden w-60 shrink-0 flex-col border-r border-gray-200 bg-white sm:flex">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gray-100 p-4">
+              {/* aspect-video + max-h-full (both set alongside w-full) is what actually
+                  removes the pillarboxing: without an intrinsic ratio here, this box just
+                  stretched to fill whatever odd width x height the flex column left over,
+                  and the video's own object-contain painted the mismatch as dark bars down
+                  the sides. Matching the box's ratio to the video's real 16:9 content
+                  means there's nothing left for object-contain to pad. */}
+              <div className="relative mx-auto flex aspect-video max-h-full w-full items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
+                {videoDuration != null && (
+                  <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                    Video {formatClock(videoDuration)}
+                  </span>
+                )}
+                {isDone && viewingFinal ? (
+                  finalVideoUrl ? (
+                    <video
+                      src={finalVideoUrl}
+                      controls
+                      className="h-full w-full object-contain"
+                      onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                      <Spinner className="h-6 w-6" />
+                      <span className="text-xs">Loading your video...</span>
+                    </div>
+                  )
+                ) : isFinalizing ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">Combining {segments.length} segment(s)...</span>
+                  </div>
+                ) : active?.video_status === "regenerating" ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">Regenerating this segment...</span>
+                  </div>
+                ) : active?.video_url ? (
+                  <video
+                    key={active.video_url}
+                    src={active.video_url}
+                    controls
+                    className="h-full w-full object-contain"
+                    onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
+                  />
+                ) : active?.video_status === "failed" ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <span className="text-xs">
+                      This segment failed to render — try regenerating it below.
+                    </span>
+                  </div>
+                ) : active?.audio_status === "ready" ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">Animating this segment...</span>
+                  </div>
+                ) : isPreSegments ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">{OVERVIEW_LABEL[job.status]}</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-500">Select a segment below</span>
+                )}
+              </div>
+
+              {/* Regen is per-segment and shouldn't wait on the whole job — a segment
+                  that's individually done (rendered or failed) is regenerable the moment
+                  it gets there, even while other segments (or, with chunked pipelining,
+                  other chunks) are still in progress. Only Finalize needs every segment
+                  done, so that stays gated on isReviewing specifically — and now lives in
+                  the top bar next to the status pill, not here. */}
+              {!viewingFinal && active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
+                <div className="mt-4 w-full shrink-0">
+                  <label className="text-xs font-medium text-foreground">
+                    Instructions to regenerate
+                  </label>
+                  <div className="mt-1.5 flex gap-2">
+                    <input
+                      value={instructions}
+                      onChange={(e) => setInstructions(e.target.value)}
+                      placeholder="e.g. make the title bigger, or fix where the title overlaps the diagram"
+                      disabled={active.video_status === "regenerating"}
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal disabled:opacity-50"
+                    />
+                    <Button
+                      variant="outline"
+                      className="!px-3 !py-1.5 text-xs"
+                      onClick={regenerateSegment}
+                      disabled={active.video_status === "regenerating" || !instructions.trim()}
+                    >
+                      {active.video_status === "regenerating" ? "Regenerating..." : "Regenerate"}
+                    </Button>
+                  </div>
+                  {regenError && <p className="mt-2 text-xs text-red-600">{regenError}</p>}
+                </div>
+              )}
+
+              {isDone && user && (
+                <div className="mt-4 w-full shrink-0 text-center">
+                  <button
+                    onClick={() => setFeedbackOpen(true)}
+                    className="text-xs font-medium text-teal hover:text-teal-dark"
+                  >
+                    Give feedback on this video
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="hidden w-[260px] shrink-0 flex-col border-l border-gray-200 bg-white sm:flex">
               <div className="flex items-center gap-1.5 border-b border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700">
                 Script
               </div>
@@ -422,116 +561,15 @@ export default function JobPage() {
                 )}
               </div>
             </div>
-
-            <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto bg-gray-100 p-6">
-              <div className="flex aspect-video w-full max-w-xl items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
-                {isDone && viewingFinal ? (
-                  finalVideoUrl ? (
-                    <video src={finalVideoUrl} controls className="h-full w-full" />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-gray-300">
-                      <Spinner className="h-6 w-6" />
-                      <span className="text-xs">Loading your video...</span>
-                    </div>
-                  )
-                ) : isFinalizing ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
-                    <Spinner className="h-6 w-6" />
-                    <span className="text-xs">Combining {segments.length} segment(s)...</span>
-                  </div>
-                ) : active?.video_status === "regenerating" ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
-                    <Spinner className="h-6 w-6" />
-                    <span className="text-xs">Regenerating this segment...</span>
-                  </div>
-                ) : active?.video_url ? (
-                  <video
-                    key={active.video_url}
-                    src={active.video_url}
-                    controls
-                    className="h-full w-full"
-                  />
-                ) : active?.video_status === "failed" ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
-                    <span className="text-xs">
-                      This segment failed to render — try regenerating it below.
-                    </span>
-                  </div>
-                ) : active?.audio_status === "ready" ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
-                    <Spinner className="h-6 w-6" />
-                    <span className="text-xs">Animating this segment...</span>
-                  </div>
-                ) : isPreSegments ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
-                    <Spinner className="h-6 w-6" />
-                    <span className="text-xs">{OVERVIEW_LABEL[job.status]}</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-gray-500">Select a segment below</span>
-                )}
-              </div>
-
-              {/* Regen is per-segment and shouldn't wait on the whole job — a segment
-                  that's individually done (rendered or failed) is regenerable the moment
-                  it gets there, even while other segments (or, with chunked pipelining,
-                  other chunks) are still in progress. Only Finalize needs every segment
-                  done, so that stays gated on isReviewing specifically. */}
-              {!viewingFinal && active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
-                <div className="mt-4 w-full max-w-xl">
-                  <label className="text-xs font-medium text-foreground">
-                    Instructions to regenerate
-                  </label>
-                  <div className="mt-1.5 flex gap-2">
-                    <input
-                      value={instructions}
-                      onChange={(e) => setInstructions(e.target.value)}
-                      placeholder="e.g. make the title bigger, or fix where the title overlaps the diagram"
-                      disabled={active.video_status === "regenerating"}
-                      className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal disabled:opacity-50"
-                    />
-                    <Button
-                      variant="outline"
-                      className="!px-3 !py-1.5 text-xs"
-                      onClick={regenerateSegment}
-                      disabled={active.video_status === "regenerating" || !instructions.trim()}
-                    >
-                      {active.video_status === "regenerating" ? "Regenerating..." : "Regenerate"}
-                    </Button>
-                  </div>
-                  {regenError && <p className="mt-2 text-xs text-red-600">{regenError}</p>}
-                  {isReviewing && (
-                    <Button
-                      className="mt-3 w-full"
-                      onClick={() => setConfirmingFinalize(true)}
-                      disabled={anyRegenerating || finalizing}
-                    >
-                      {finalizing ? "Starting..." : "Finalize video"}
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {isDone && user && (
-                <div className="mt-4 w-full max-w-xl text-center">
-                  <button
-                    onClick={() => setFeedbackOpen(true)}
-                    className="text-xs font-medium text-teal hover:text-teal-dark"
-                  >
-                    Give feedback on this video
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Timeline */}
           {segments.length > 0 && (
             <div className="shrink-0 overflow-x-auto border-t border-gray-200 bg-white px-4 py-3">
-              <div style={{ width: segments.length * 104 }}>
+              <div style={{ width: segments.length * 72 }}>
                 <div className="mb-1.5 flex gap-2 text-[9px] text-gray-300">
                   {segments.map((s, i) => (
-                    <div key={s.index} style={{ width: 96 }}>
+                    <div key={s.index} style={{ width: 64 }}>
                       {formatClock(clipStarts[i] ?? 0)}
                     </div>
                   ))}
@@ -541,47 +579,57 @@ export default function JobPage() {
                     Video
                   </span>
                   <div className="flex gap-2">
-                    {segments.map((s) => (
-                      <button
-                        key={s.index}
-                        onClick={() => {
-                          setSelected(s.index);
-                          setViewingFinal(false);
-                        }}
-                        style={{ width: 96 }}
-                        className={`relative flex h-10 items-center justify-center rounded-md text-[10px] font-medium transition-all ${
-                          s.index === effectiveSelected && !viewingFinal ? "ring-2 ring-teal" : ""
-                        } ${
-                          s.video_status === "regenerating"
-                            ? "animate-pulse bg-teal-light text-teal"
-                            : s.video_status === "failed"
-                              ? "bg-red-100 text-red-700"
-                              : s.video_status === "ready"
-                                ? "bg-gray-900 text-white"
-                                : s.audio_status === "ready"
-                                  ? "bg-gray-500 text-gray-100"
-                                  : "border border-dashed border-gray-200 bg-transparent text-gray-300"
-                        }`}
-                      >
-                        {s.video_status === "regenerating" ? null : s.video_status === "failed" ? (
-                          "!"
-                        ) : s.video_status === "ready" ? (
-                          <PlayIcon />
-                        ) : s.audio_status === "ready" ? (
-                          <Spinner />
-                        ) : (
-                          s.index + 1
-                        )}
-                        {s.regenerated && s.video_status !== "regenerating" && (
-                          <span
-                            title="Regenerated"
-                            className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-teal text-[8px] leading-none text-white"
-                          >
-                            ↻
-                          </span>
-                        )}
-                      </button>
-                    ))}
+                    {segments.map((s) => {
+                      const isSelected = s.index === effectiveSelected && !viewingFinal;
+                      return (
+                        <button
+                          key={s.index}
+                          onClick={() => {
+                            setSelected(s.index);
+                            setViewingFinal(false);
+                          }}
+                          style={{ width: 64 }}
+                          className={`relative flex h-8 items-center justify-center rounded-md text-[10px] font-medium transition-all ${
+                            isSelected ? "ring-2 ring-teal ring-offset-1" : ""
+                          } ${
+                            s.video_status === "regenerating"
+                              ? "animate-pulse bg-teal-light text-teal"
+                              : s.video_status === "failed"
+                                ? "bg-red-100 text-red-700"
+                                : s.video_status === "ready"
+                                  ? "bg-gray-900 text-white"
+                                  : s.audio_status === "ready"
+                                    ? "bg-gray-500 text-gray-100"
+                                    : "border border-dashed border-gray-200 bg-transparent text-gray-300"
+                          }`}
+                        >
+                          {s.video_status === "regenerating" ? null : s.video_status === "failed" ? (
+                            "!"
+                          ) : s.video_status === "ready" ? (
+                            // Selected shows only the accent ring ("current"); the play
+                            // icon is reserved for other ready segments to signal
+                            // "clickable" — showing both on the same tile was redundant.
+                            isSelected ? (
+                              s.index + 1
+                            ) : (
+                              <PlayIcon className="h-3.5 w-3.5" />
+                            )
+                          ) : s.audio_status === "ready" ? (
+                            <Spinner />
+                          ) : (
+                            s.index + 1
+                          )}
+                          {s.regenerated && s.video_status !== "regenerating" && (
+                            <span
+                              title="Regenerated"
+                              className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-teal text-[8px] leading-none text-white"
+                            >
+                              ↻
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -596,9 +644,9 @@ export default function JobPage() {
                           setSelected(s.index);
                           setViewingFinal(false);
                         }}
-                        style={{ width: 96 }}
-                        className={`flex h-6 items-center justify-center rounded-md text-[10px] transition-all ${
-                          s.index === effectiveSelected && !viewingFinal ? "ring-2 ring-teal" : ""
+                        style={{ width: 64 }}
+                        className={`flex h-5 items-center justify-center rounded-md text-[10px] transition-all ${
+                          s.index === effectiveSelected && !viewingFinal ? "ring-2 ring-teal ring-offset-1" : ""
                         } ${
                           s.audio_status === "ready"
                             ? "bg-teal-light text-teal-dark"
@@ -616,13 +664,22 @@ export default function JobPage() {
                   independent of video status, so audio is playable the instant it's
                   ready and stays playable after video finishes too. A separate row
                   (not inline with the Audio timeline row above) so it never shifts
-                  that row's buttons out of column alignment with the Video row. */}
+                  that row's buttons out of column alignment with the Video row.
+                  Labeled with its own duration (rather than reusing "Play") so a
+                  narration track that's shorter than its video reads as intentional,
+                  not a bug. */}
               <div className="mt-1.5 flex items-center gap-1.5">
-                <span className="w-10 shrink-0 text-[9px] font-semibold uppercase text-gray-300">
-                  Play
+                <span className="w-16 shrink-0 whitespace-nowrap text-[9px] font-semibold uppercase text-gray-300">
+                  Audio{audioDuration != null ? ` ${formatClock(audioDuration)}` : ""}
                 </span>
                 {active?.audio_status === "ready" && active.audio_url ? (
-                  <audio key={active.audio_url} src={active.audio_url} controls className="h-7" />
+                  <audio
+                    key={active.audio_url}
+                    src={active.audio_url}
+                    controls
+                    className="h-7"
+                    onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                  />
                 ) : (
                   <span className="text-[10px] text-gray-300">
                     {active ? "No audio yet for this segment" : "Select a segment"}

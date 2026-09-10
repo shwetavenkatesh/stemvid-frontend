@@ -3,12 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import Navbar from "@/components/shared/Navbar";
 import Modal from "@/components/shared/Modal";
-import VideoCard from "@/components/dashboard/VideoCard";
-import CourseCard from "@/components/dashboard/CourseCard";
 import GenerateForm from "@/components/dashboard/GenerateForm";
 import EmptyState from "@/components/dashboard/EmptyState";
+import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import TosGate from "@/components/dashboard/TosGate";
 import Button from "@/components/shared/Button";
 import Link from "next/link";
@@ -148,8 +146,7 @@ export default function DashboardPage() {
           loading={acceptingTos}
         />
       )}
-      <Navbar user={user} />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+      <main className="w-full flex-1 px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
@@ -182,50 +179,17 @@ export default function DashboardPage() {
         </div>
 
         {(() => {
-          // source_type didn't exist before papers could land in courses — every
-          // pre-existing row predates the column, so null/undefined means "book".
-          const books = courses.filter((c) => c.source_type !== "paper");
+          // Books are hidden from the dashboard for now (see LibraryRail) — this
+          // empty-state check only looks at papers, matching what the rail shows.
           const paperCourses = courses.filter((c) => c.source_type === "paper");
           const standaloneJobs = jobs.filter((job) => !job.course_id);
           const hasPapers = paperCourses.length > 0 || standaloneJobs.length > 0;
-          const isEmpty = books.length === 0 && !hasPapers;
-          return isEmpty ? (
+          return hasPapers ? (
+            <DashboardOverview jobs={jobs} />
+          ) : (
             <div className="mt-10">
               <EmptyState onGenerate={() => setShowForm(true)} />
             </div>
-          ) : (
-            <>
-              {books.length > 0 && (
-                <div className="mt-10">
-                  <h2 className="text-lg font-semibold text-foreground">
-                    Books
-                  </h2>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Long PDFs with a table of contents, split into a full video course.
-                  </p>
-                  <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {books.map((course) => (
-                      <CourseCard key={course.id} course={course} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {hasPapers && (
-                <div className="mt-10">
-                  <h2 className="text-lg font-semibold text-foreground">
-                    Papers
-                  </h2>
-                  <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {paperCourses.map((course) => (
-                      <CourseCard key={course.id} course={course} />
-                    ))}
-                    {standaloneJobs.map((job) => (
-                      <VideoCard key={job.id} job={job} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
           );
         })()}
       </main>

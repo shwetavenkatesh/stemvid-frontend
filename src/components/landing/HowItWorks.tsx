@@ -3,7 +3,7 @@ const steps = [
     number: "1",
     title: "Upload your PDF",
     description:
-      "PDF research papers or PDF textbooks.",
+      "PDF research papers.",
   },
   {
     number: "2",

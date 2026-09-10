@@ -54,6 +54,17 @@ export default function ContactForm() {
           you.
         </p>
 
+        <div className="mt-8 rounded-lg border border-teal/20 bg-teal/5 px-5 py-4 text-center">
+          <p className="text-sm font-semibold text-foreground">
+            Looking for beta testers
+          </p>
+          <p className="mt-1 text-sm text-gray-600">
+            We&apos;re looking for a few people to try stemvid.ai and tell us
+            what&apos;s working (or not). Beta testers get extra free videos
+            in exchange for their feedback.
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit} className="mt-10 space-y-5">
           <div>
             <label
