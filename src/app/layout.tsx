@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "stemvid.ai — the video studio for technical ideas",
   description:
-    "Turn research papers and textbooks into a first draft in minutes, then refine every scene until it's ready.",
+    "Turn research papers into a first draft in minutes, then refine every scene until it's ready.",
 };
 
 export default function RootLayout({
