@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase";
 import Modal from "@/components/shared/Modal";
 import GenerateForm from "@/components/dashboard/GenerateForm";
 import EmptyState from "@/components/dashboard/EmptyState";
+import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import TosGate from "@/components/dashboard/TosGate";
 import Button from "@/components/shared/Button";
 import Link from "next/link";
@@ -184,9 +185,7 @@ export default function DashboardPage() {
           const standaloneJobs = jobs.filter((job) => !job.course_id);
           const hasPapers = paperCourses.length > 0 || standaloneJobs.length > 0;
           return hasPapers ? (
-            <p className="mt-10 text-sm text-gray-500">
-              Select a video from the list on the left, or generate a new one.
-            </p>
+            <DashboardOverview jobs={jobs} />
           ) : (
             <div className="mt-10">
               <EmptyState onGenerate={() => setShowForm(true)} />
