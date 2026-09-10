@@ -378,14 +378,17 @@ export default function JobPage() {
         )}
 
         {/* Studio workbench */}
-        <div className="mt-6 flex h-[75vh] min-h-[540px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-background">
+        <div className="mt-6 flex h-[85vh] min-h-[640px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-background">
           {/* Top bar */}
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-teal text-xs font-bold text-white">
                 {(job.title || "V").charAt(0).toUpperCase()}
               </div>
-              <p className="truncate text-sm font-semibold leading-tight text-foreground">
+              <p
+                title={job.title || "Untitled video"}
+                className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground"
+              >
                 {job.title || "Untitled video"}
               </p>
             </div>
@@ -417,7 +420,13 @@ export default function JobPage() {
           {/* Main row: canvas (hero) + script reference rail */}
           <div className="flex min-h-0 flex-1">
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gray-100 p-4">
-              <div className="relative flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
+              {/* aspect-video + max-h-full (both set alongside w-full) is what actually
+                  removes the pillarboxing: without an intrinsic ratio here, this box just
+                  stretched to fill whatever odd width x height the flex column left over,
+                  and the video's own object-contain painted the mismatch as dark bars down
+                  the sides. Matching the box's ratio to the video's real 16:9 content
+                  means there's nothing left for object-contain to pad. */}
+              <div className="relative mx-auto flex aspect-video max-h-full w-full items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
                 {videoDuration != null && (
                   <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
                     Video {formatClock(videoDuration)}
