@@ -32,13 +32,15 @@ function courseStatusLabel(status: CourseStatus): string {
 function StatusBadge({
   colorClass,
   label,
+  className = "",
 }: {
   colorClass: string;
   label: string;
+  className?: string;
 }) {
   return (
     <span
-      className={`inline-block shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${colorClass}`}
+      className={`inline-block shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${colorClass} ${className}`}
     >
       {label}
     </span>
@@ -144,7 +146,7 @@ export default function LibraryRail() {
                 <button
                   type="button"
                   onClick={() => toggleExpanded(course.id)}
-                  className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left hover:bg-gray-50"
+                  className="flex w-full items-start justify-between gap-2 rounded-md px-2 py-2 text-left hover:bg-gray-50"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">
@@ -154,9 +156,15 @@ export default function LibraryRail() {
                       {total ? `${completed}/${total} parts` : "Planning..."}
                     </p>
                   </div>
+                  {/* items-start + this top offset lines the badge up with the title's
+                      first line, matching where it sits on the single-line job rows
+                      below (items-center) — items-center here instead would float the
+                      badge against the vertical center of the whole two-line block,
+                      landing it lower than every other pill in the rail. */}
                   <StatusBadge
                     colorClass={courseStatusColors[course.status] ?? courseStatusColors.queued}
                     label={courseStatusLabel(course.status)}
+                    className="mt-0.5"
                   />
                 </button>
                 {isOpen && children.length > 0 && (
