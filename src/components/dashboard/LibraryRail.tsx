@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -52,6 +52,7 @@ export default function LibraryRail() {
   const params = useParams<{ id?: string }>();
   const selectedJobId = params?.id;
 
+  const [userId, setUserId] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,32 +62,72 @@ export default function LibraryRail() {
   // an effect) fires once per navigation instead of on every render.
   const [autoExpandedFor, setAutoExpandedFor] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
+  const load = useCallback(
+    async (uid: string) => {
       const [{ data: jobsData }, { data: coursesData }] = await Promise.all([
         supabase
           .from("jobs")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("user_id", uid)
           .order("created_at", { ascending: false }),
         supabase
           .from("courses")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("user_id", uid)
           .order("created_at", { ascending: false }),
       ]);
       if (jobsData) setJobs(jobsData);
       if (coursesData) setCourses(coursesData);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  useEffect(() => {
+    async function init() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
+      await load(user.id);
       setLoading(false);
     }
-    load();
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // This rail is a layout-level sibling of the dashboard and job pages, not a child of
+  // either — a new paper created from the generate modal, or a status change made while
+  // viewing a job, has no prop path to reach it. Realtime is the fast path here, same as
+  // job/[id]/page.tsx, but not the only one for the same reason documented there: a
+  // dropped/unauthorized websocket subscription would otherwise leave this rail frozen
+  // on stale data with no way to recover short of a manual refresh.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`library-rail-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs", filter: `user_id=eq.${userId}` },
+        () => load(userId)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "courses", filter: `user_id=eq.${userId}` },
+        () => load(userId)
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, load]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const interval = setInterval(() => load(userId), 8000);
+    return () => clearInterval(interval);
+  }, [userId, load]);
 
   // A course this rail links into should default to open — otherwise landing
   // directly on /job/[id] for a part of a multi-part paper would show the rail

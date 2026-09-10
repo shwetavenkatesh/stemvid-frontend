@@ -36,6 +36,14 @@ jest.mock("@/lib/supabase", () => ({
         }),
       }),
     }),
+    channel: () => {
+      const chainable = {
+        on: () => chainable,
+        subscribe: () => chainable,
+      };
+      return chainable;
+    },
+    removeChannel: () => {},
   }),
 }));
 
