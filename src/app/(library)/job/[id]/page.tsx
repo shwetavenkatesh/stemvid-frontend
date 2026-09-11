@@ -505,8 +505,14 @@ export default function JobPage() {
                   it gets there, even while other segments (or, with chunked pipelining,
                   other chunks) are still in progress. Only Finalize needs every segment
                   done, so that stays gated on isReviewing specifically — and now lives in
-                  the top bar next to the status pill, not here. */}
-              {!viewingFinal && active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
+                  the top bar next to the status pill, not here.
+
+                  Also gated on !isDone: once finalized, the /api/jobs/[id]/regenerate
+                  route itself rejects with 400 (job.status is no longer "reviewing" or
+                  "rendering") — clicking into a segment via the timeline below still
+                  works for browsing, but without this the UI would still offer a
+                  Regenerate button that's guaranteed to fail server-side. */}
+              {!isDone && !viewingFinal && active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
                 <div className="mt-4 w-full shrink-0">
                   <label className="text-xs font-medium text-foreground">
                     Instructions to regenerate

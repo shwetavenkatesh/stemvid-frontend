@@ -6,7 +6,8 @@ jest.mock("@/lib/posthog", () => ({ trackEvent: jest.fn() }));
 const mockFetch = jest.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
 
-function fillForm() {
+function openAndFillForm() {
+  fireEvent.click(screen.getByRole("button", { name: /get in touch/i }));
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "ada@example.com" },
   });
@@ -24,7 +25,7 @@ describe("ContactForm", () => {
     mockFetch.mockResolvedValue({ ok: true });
     render(<ContactForm />);
 
-    fillForm();
+    openAndFillForm();
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() =>
@@ -40,7 +41,7 @@ describe("ContactForm", () => {
     mockFetch.mockResolvedValue({ ok: false });
     render(<ContactForm />);
 
-    fillForm();
+    openAndFillForm();
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() =>
