@@ -485,15 +485,23 @@ export default function JobPage() {
                       This segment failed to render — try regenerating it below.
                     </span>
                   </div>
+                ) : isPreSegments ? (
+                  // Checked before the audio_status branch below on purpose: individual
+                  // segments' audio can finish (and report audio_status "ready") well
+                  // before the job as a whole leaves "generating_audio" — audio for
+                  // every segment must finish before on_status("creating_animations")
+                  // fires and any Manim rendering starts. Without this ordering, a
+                  // segment whose audio just finished showed "Animating this segment..."
+                  // while the top bar still (correctly) said "Recording narration...",
+                  // even though nothing was animating yet anywhere in the job.
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Spinner className="h-6 w-6" />
+                    <span className="text-xs">{OVERVIEW_LABEL[job.status]}</span>
+                  </div>
                 ) : active?.audio_status === "ready" ? (
                   <div className="flex flex-col items-center gap-2 text-gray-300">
                     <Spinner className="h-6 w-6" />
                     <span className="text-xs">Animating this segment...</span>
-                  </div>
-                ) : isPreSegments ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-300">
-                    <Spinner className="h-6 w-6" />
-                    <span className="text-xs">{OVERVIEW_LABEL[job.status]}</span>
                   </div>
                 ) : (
                   <span className="text-xs text-gray-500">Select a segment below</span>
