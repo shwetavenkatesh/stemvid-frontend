@@ -45,27 +45,19 @@ export default function ContactForm() {
 
   return (
     <section id="contact" className="px-6 py-20">
-      <div className="mx-auto max-w-md">
-        <h2 className="text-center text-2xl font-bold text-foreground md:text-3xl">
-          Get in touch
+      <div className="mx-auto max-w-md text-center">
+        <p className="text-sm font-semibold uppercase tracking-wide text-teal">
+          Looking for beta testers
+        </p>
+        <h2 className="mt-2 text-2xl font-bold text-foreground md:text-3xl">
+          We&apos;d love to hear from you
         </h2>
-        <p className="mt-3 text-center text-gray-500">
-          Questions, feedback, or need more videos? We&apos;d love to hear from
-          you.
+        <p className="mt-3 text-gray-500">
+          Try stemvid.ai and tell us what&apos;s working or not. Beta testers
+          get extra free videos in exchange for feedback.
         </p>
 
-        <div className="mt-8 rounded-lg border border-teal/20 bg-teal/5 px-5 py-4 text-center">
-          <p className="text-sm font-semibold text-foreground">
-            Looking for beta testers
-          </p>
-          <p className="mt-1 text-sm text-gray-600">
-            We&apos;re looking for a few people to try stemvid.ai and tell us
-            what&apos;s working (or not). Beta testers get extra free videos
-            in exchange for their feedback.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+        <form onSubmit={handleSubmit} className="mt-10 space-y-5 text-left">
           <div>
             <label
               htmlFor="contact-name"
@@ -78,7 +70,7 @@ export default function ContactForm() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
             />
           </div>
 
@@ -95,7 +87,7 @@ export default function ContactForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
             />
           </div>
 
@@ -110,7 +102,7 @@ export default function ContactForm() {
               id="contact-type"
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
             >
               <option value="general">General enquiry</option>
               <option value="more_videos">I need more videos</option>
@@ -134,7 +126,7 @@ export default function ContactForm() {
               rows={4}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-foreground focus:border-teal focus:outline-none"
             />
           </div>
 

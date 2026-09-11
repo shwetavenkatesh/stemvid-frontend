@@ -1,7 +1,7 @@
 export default function UnlimitedComingSoon() {
   return (
     <section className="px-6 py-20">
-      <div className="mx-auto max-w-2xl rounded-lg border border-gray-200 bg-gray-100 p-8 text-center">
+      <div className="mx-auto max-w-2xl rounded-xl border border-gray-200 bg-gray-100 p-8 text-center">
         <span className="inline-block rounded-full bg-teal/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-teal">
           Coming soon
         </span>

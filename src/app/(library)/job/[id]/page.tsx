@@ -385,12 +385,27 @@ export default function JobPage() {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-teal text-xs font-bold text-white">
                 {(job.title || "V").charAt(0).toUpperCase()}
               </div>
-              <p
-                title={job.title || "Untitled video"}
-                className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground"
-              >
-                {job.title || "Untitled video"}
-              </p>
+              <div className="min-w-0">
+                <p
+                  title={job.title || "Untitled video"}
+                  className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground"
+                >
+                  {job.title || "Untitled video"}
+                </p>
+                {isDone && job.completed_at && (
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {new Date(job.completed_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    &middot; finalized{" "}
+                    {new Date(job.completed_at).toLocaleDateString([], {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-3">
               <span className="flex items-center gap-1.5 rounded-full bg-teal-light px-2.5 py-1 text-[11px] font-medium text-teal-dark">
@@ -426,7 +441,7 @@ export default function JobPage() {
                   and the video's own object-contain painted the mismatch as dark bars down
                   the sides. Matching the box's ratio to the video's real 16:9 content
                   means there's nothing left for object-contain to pad. */}
-              <div className="relative mx-auto flex aspect-video max-h-full w-full items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
+              <div className="relative mx-auto flex aspect-video max-h-full w-full items-center justify-center overflow-hidden rounded-xl bg-gray-900 text-white shadow-lg">
                 {videoDuration != null && (
                   <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
                     Video {formatClock(videoDuration)}
