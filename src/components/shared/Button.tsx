@@ -19,7 +19,7 @@ export default function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
   return (
     <button
-      className={`rounded-md px-5 py-2.5 text-sm font-medium transition-colors ${styles[variant]} ${className}`}
+      className={`rounded-lg px-5 py-2.5 text-sm font-medium transition-colors ${styles[variant]} ${className}`}
       {...props}
     >
       {children}

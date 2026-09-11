@@ -40,13 +40,14 @@ export default function WhyItsAccurate() {
           Accurate by design. Yours to approve.
         </p>
 
-        <div className="mt-14 space-y-10">
+        <div className="mt-12 grid gap-4 sm:grid-cols-2">
           {points.map((point) => (
-            <div key={point.title} className="text-center md:text-left">
-              <h3 className="text-lg font-semibold text-teal">
-                {point.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            <div
+              key={point.title}
+              className="rounded-xl border border-gray-200 bg-background p-5"
+            >
+              <h3 className="text-sm font-medium text-teal">{point.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-gray-500">
                 {point.description}
               </p>
             </div>

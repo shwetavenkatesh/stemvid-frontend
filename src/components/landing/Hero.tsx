@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function Hero() {
   return (
     <section className="px-6 py-20 md:py-28">
@@ -15,7 +17,14 @@ export default function Hero() {
           every scene until it&apos;s ready.
         </p>
 
-        <div className="mt-10 flex flex-col items-center gap-3 text-sm text-gray-500 sm:flex-row sm:justify-center sm:gap-6">
+        <Link
+          href="/auth"
+          className="mt-8 inline-block rounded-lg bg-teal px-6 py-3 text-sm font-medium text-white hover:bg-teal-dark"
+        >
+          Try it free
+        </Link>
+
+        <div className="mt-8 flex flex-col items-center gap-3 text-sm text-gray-500 sm:flex-row sm:justify-center sm:gap-6">
           <span>
             Animations powered by{" "}
             <span className="font-medium text-foreground">Manim</span>

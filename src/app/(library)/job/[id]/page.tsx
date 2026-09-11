@@ -341,7 +341,7 @@ export default function JobPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex flex-1 items-center justify-center bg-background">
         <p className="text-sm text-gray-500">Loading...</p>
       </div>
     );
@@ -385,12 +385,27 @@ export default function JobPage() {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-teal text-xs font-bold text-white">
                 {(job.title || "V").charAt(0).toUpperCase()}
               </div>
-              <p
-                title={job.title || "Untitled video"}
-                className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground"
-              >
-                {job.title || "Untitled video"}
-              </p>
+              <div className="min-w-0">
+                <p
+                  title={job.title || "Untitled video"}
+                  className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground"
+                >
+                  {job.title || "Untitled video"}
+                </p>
+                {isDone && job.completed_at && (
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {new Date(job.completed_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    &middot; finalized{" "}
+                    {new Date(job.completed_at).toLocaleDateString([], {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-3">
               <span className="flex items-center gap-1.5 rounded-full bg-teal-light px-2.5 py-1 text-[11px] font-medium text-teal-dark">
@@ -426,7 +441,7 @@ export default function JobPage() {
                   and the video's own object-contain painted the mismatch as dark bars down
                   the sides. Matching the box's ratio to the video's real 16:9 content
                   means there's nothing left for object-contain to pad. */}
-              <div className="relative mx-auto flex aspect-video max-h-full w-full items-center justify-center overflow-hidden rounded-lg bg-gray-900 text-white shadow-lg">
+              <div className="relative mx-auto flex aspect-video max-h-full w-full items-center justify-center overflow-hidden rounded-xl bg-gray-900 text-white shadow-lg">
                 {videoDuration != null && (
                   <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
                     Video {formatClock(videoDuration)}
@@ -490,8 +505,14 @@ export default function JobPage() {
                   it gets there, even while other segments (or, with chunked pipelining,
                   other chunks) are still in progress. Only Finalize needs every segment
                   done, so that stays gated on isReviewing specifically — and now lives in
-                  the top bar next to the status pill, not here. */}
-              {!viewingFinal && active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
+                  the top bar next to the status pill, not here.
+
+                  Also gated on !isDone: once finalized, the /api/jobs/[id]/regenerate
+                  route itself rejects with 400 (job.status is no longer "reviewing" or
+                  "rendering") — clicking into a segment via the timeline below still
+                  works for browsing, but without this the UI would still offer a
+                  Regenerate button that's guaranteed to fail server-side. */}
+              {!isDone && !viewingFinal && active && (active.video_status === "ready" || active.video_status === "failed" || active.video_status === "regenerating") && (
                 <div className="mt-4 w-full shrink-0">
                   <label className="text-xs font-medium text-foreground">
                     Instructions to regenerate

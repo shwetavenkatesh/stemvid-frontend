@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdfbf7;
-  --foreground: #1a1a1a;
-  --teal: #0d6e6e;
-  --teal-dark: #0a5555;
-  --teal-light: #e6f2f2;
-  --gray-100: #f5f3ef;
-  --gray-200: #e8e5df;
-  --gray-300: #d1cdc6;
-  --gray-500: #6b6560;
+  --background: #faf7f0;
+  --foreground: #2c2c2a;
+  --teal: #0f6e56;
+  --teal-dark: #085041;
+  --teal-light: #e1f5ee;
+  --gray-100: #f3efe4;
+  --gray-200: #e7e2d6;
+  --gray-300: #d9d4c7;
+  --gray-500: #5f5e5a;
   --gray-700: #3d3833;
 }
 

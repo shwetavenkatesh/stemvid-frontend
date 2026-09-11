@@ -2,26 +2,23 @@ const steps = [
   {
     number: "1",
     title: "Upload your PDF",
-    description:
-      "PDF research papers.",
+    description: "Research papers or textbook chapters.",
   },
   {
     number: "2",
-    title: "AI reads, understands, and writes an animated script",
-    description:
-      "Every script is verified against the source material for accuracy before rendering.",
+    title: "AI writes the script",
+    description: "Checked against your source before rendering.",
   },
   {
     number: "3",
-    title: "Review your video, scene by scene",
-    description:
-      "Every scene renders separately. Watch each one and regenerate any that aren't right — finalize when it's ready.",
+    title: "AI renders, you review",
+    description: "Every scene animated — regenerate anything that's not quite right.",
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section className="px-6 py-20">
+    <section id="how-it-works" className="px-6 py-20">
       <div className="mx-auto max-w-4xl">
         <p className="text-center text-sm font-semibold uppercase tracking-wide text-teal">
           The process
@@ -30,16 +27,19 @@ export default function HowItWorks() {
           How it works
         </h2>
 
-        <div className="mt-14 grid gap-10 md:grid-cols-3">
+        <div className="mt-14 grid gap-5 md:grid-cols-3">
           {steps.map((step) => (
-            <div key={step.number} className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-teal text-lg font-bold text-white">
+            <div
+              key={step.number}
+              className="rounded-xl border border-gray-200 bg-background p-5"
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-light text-sm font-medium text-teal">
                 {step.number}
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-foreground">
+              <h3 className="mt-3 text-sm font-medium text-foreground">
                 {step.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
                 {step.description}
               </p>
             </div>

@@ -1,42 +1,38 @@
 const personas = [
   {
     title: "Researchers",
-    description:
-      "Share your work visually without spending weeks on production.",
+    description: "Share your work visually, no production time.",
   },
   {
-    title: "Educators & Content Creators",
-    description:
-      "Create polished video content on any technical topic, no animation skills needed.",
+    title: "Educators",
+    description: "Polished video content, no animation skills.",
   },
   {
     title: "Students",
-    description:
-      "Understand complex papers through clear visual explanation.",
+    description: "Understand papers through clear visuals.",
   },
   {
     title: "Engineers",
-    description:
-      "Explain complex systems and concepts to teams and stakeholders in minutes.",
+    description: "Explain systems to teams in minutes.",
   },
 ];
 
 export default function WhoItsFor() {
   return (
-    <section className="bg-gray-100 px-6 py-20">
+    <section id="who-its-for" className="bg-gray-100 px-6 py-20">
       <div className="mx-auto max-w-4xl">
         <h2 className="text-center text-2xl font-bold text-foreground md:text-3xl">
           Who it&apos;s for
         </h2>
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-2">
+        <div className="mt-12 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           {personas.map((p) => (
             <div
               key={p.title}
-              className="rounded-lg border border-gray-200 bg-background p-6"
+              className="rounded-xl border border-gray-200 bg-background p-4"
             >
-              <h3 className="text-lg font-semibold text-teal">{p.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-gray-500">
+              <h3 className="text-sm font-medium text-teal">{p.title}</h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
                 {p.description}
               </p>
             </div>
