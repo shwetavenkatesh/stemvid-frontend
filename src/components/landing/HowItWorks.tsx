@@ -11,8 +11,8 @@ const steps = [
   },
   {
     number: "3",
-    title: "Review scene by scene",
-    description: "Regenerate anything that's not quite right.",
+    title: "AI renders, you review",
+    description: "Every scene animated — regenerate anything that's not quite right.",
   },
 ];
 
