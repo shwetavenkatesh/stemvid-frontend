@@ -8,25 +8,14 @@ import Modal from "@/components/shared/Modal";
 import GenerateForm from "@/components/dashboard/GenerateForm";
 import EmptyState from "@/components/dashboard/EmptyState";
 import TosGate from "@/components/dashboard/TosGate";
+import PaperRow from "@/components/dashboard/PaperRow";
 import Button from "@/components/shared/Button";
-import type { Job, Course, Profile, JobStatus } from "@/types";
+import type { Job, Profile } from "@/types";
 
 // Matches BYOK_FREE_VIDEO_LIMIT in modal_app.py — a one-time lifetime grant, not
 // a monthly allowance. Past this, generation requires a BYOK Anthropic key (see
 // /settings) and is then uncapped.
 const FREE_LIFETIME_VIDEO_LIMIT = 2;
-
-const STATUS_PILL: Record<JobStatus, { label: string; className: string }> = {
-  queued: { label: "Processing", className: "bg-gray-100 text-gray-500" },
-  generating_script: { label: "Processing", className: "bg-gray-100 text-gray-500" },
-  generating_audio: { label: "Processing", className: "bg-gray-100 text-gray-500" },
-  creating_animations: { label: "Processing", className: "bg-gray-100 text-gray-500" },
-  rendering: { label: "Processing", className: "bg-gray-100 text-gray-500" },
-  reviewing: { label: "Ready to review", className: "bg-amber-100 text-amber-800" },
-  finalizing: { label: "Finalizing", className: "bg-gray-100 text-gray-500" },
-  ready: { label: "Ready", className: "bg-teal-light text-teal" },
-  failed: { label: "Failed", className: "bg-red-100 text-red-700" },
-};
 
 function relativeTime(iso: string): string {
   const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -43,7 +32,6 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [acceptingTos, setAcceptingTos] = useState(false);
@@ -58,15 +46,6 @@ export default function DashboardPage() {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (data) setJobs(data);
-  }, []);
-
-  const loadCourses = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("courses")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-    if (data) setCourses(data);
   }, []);
 
   useEffect(() => {
@@ -111,11 +90,11 @@ export default function DashboardPage() {
         }
       }
 
-      await Promise.all([loadJobs(authUser.id), loadCourses(authUser.id)]);
+      await loadJobs(authUser.id);
       setLoading(false);
     }
     init();
-  }, [router, loadJobs, loadCourses]);
+  }, [router, loadJobs]);
 
   if (loading) {
     return (
@@ -254,25 +233,9 @@ export default function DashboardPage() {
                 Your papers
               </p>
               <div className="mt-2.5 flex flex-col gap-2">
-                {jobs.map((job) => {
-                  const pill = STATUS_PILL[job.status] ?? STATUS_PILL.queued;
-                  return (
-                    <Link
-                      key={job.id}
-                      href={`/job/${job.id}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-background px-4 py-3.5 hover:border-teal"
-                    >
-                      <span className="truncate text-sm text-foreground">
-                        {job.title || "Untitled video"}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium ${pill.className}`}
-                      >
-                        {pill.label}
-                      </span>
-                    </Link>
-                  );
-                })}
+                {jobs.map((job) => (
+                  <PaperRow key={job.id} job={job} />
+                ))}
               </div>
             </div>
           </>
@@ -288,7 +251,6 @@ export default function DashboardPage() {
               setShowForm(false);
               if (user) {
                 loadJobs(user.id);
-                loadCourses(user.id);
               }
             }}
           />
